@@ -9,6 +9,7 @@ import { camera } from './core/engine.js';
 import * as WD from './core/world.js';
 import * as CY from './core/canyon.js';
 import { Toon, PROPS, INK } from './core/toon.js';
+import * as FX from './core/fx.js';
 
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const mix = (a, b, k) => a.clone().lerp(b, k);
@@ -37,9 +38,10 @@ const P2 = {
 };
 
 export function buildShots(E) {
-  const S = [], CUES = [], add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; f(lt, d, t, blit); }; S.push(o); return o; }, cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
+  const S = [], CUES = [], add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; f(lt, d, t, blit); if (!o.noMotes) FX.motes(t, { n: 22, col: '255,236,200' }); if (o.shafts) FX.shafts(t, { k: o.shafts }); }; S.push(o); return o; }, cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
   const cut = (i) => (i === 0 ? 0 : L(i) - 0.06);
   const cam = camera(40);
+  const headXY = (p, up = 1.62) => { const v = p.group.position.clone(); v.y += up; v.project(cam); return [(v.x + 1) / 2 * CW, (1 - v.y) / 2 * CH]; };
   const LK = { bloom: 0.14, aperture: 0.0006, maxblur: 0.006 };
   const shoot = (scene, people, from, to, at, at2, k, look = LK, shake = 0, t = 0) => {
     const fov = look.fov || 40; if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
@@ -150,7 +152,7 @@ export function buildShots(E) {
   const WZ = -2;            // where the welding happens (rail at x +0.72)
   // ── S01 · "Why do railroad crews heat up a steel rail" — low close: the welder's torch, the rail glowing ──
   { const st = cut(0);
-    add({ id: 'S01', at: st, note: 'low on the rail: the welder crouches with a torch, the rail glows orange; slow push-in', draw(lt, d, t, blit) {
+    add({ id: 'S01', at: st, shafts: 0.8, note: 'low on the rail: the welder crouches with a torch, the rail glows orange; slow push-in', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d)), on = clamp(lt / 0.8);
       stand(welder, 1.35, WZ, { mood: 'strain', armR: [40, 30], holdR: P2.torch, lean: -10, blink: blink(t) }, -0.35);
       stand(foreman, -1.5, WZ - 2.2, { mood: 'deadpan', armL: [12, 40], blink: blink(t, 1.1) });
@@ -205,27 +207,27 @@ export function buildShots(E) {
 
   // ── S06 · "Today, the rail is welded into one long ribbon." — colour returns; seamless rail to the horizon, crane up ──
   { const st = cut(5);
-    add({ id: 'S06', at: st, note: 'colour again: one seamless rail running to the horizon; camera cranes up from the rail', draw(lt, d, t, blit) {
+    add({ id: 'S06', at: st, shafts: 1, note: 'colour again: one seamless rail running to the horizon; camera cranes up from the rail', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d));
       stand(welder, 1.6, -3, { mood: 'proud', armL: [150, 10], holdR: P2.torch, blink: blink(t) });
       shoot(D, all, V3(0.9, 0.6, 5), V3(1.6, 6.0, 9), V3(0.7, 0.3, -6), V3(0, 0, -70), k, { ...LK, fov: lerp(40, 46, k) });
-      blit(); sepia(1 - clamp(lt / 0.35));
+      blit(); sepia(1 - clamp(lt / 0.35)); FX.sparkle(560, 1000, t, clamp((lt - 0.6) / 0.3) * (1 - clamp((lt - 1.6) / 0.4)), 70);
     } });
     cue(st, 'whoosh', { gain: 0.9 }); cue(st + 0.1, 'sparkle', { gain: 0.4 }); }
 
   // ── S07 · "No gaps. Nowhere to grow." — the rookie looks down the rail, worried ──
   { const st = cut(6);
-    add({ id: 'S07', at: st, note: 'the rookie by the rail looking for a gap, worried; push-in', draw(lt, d, t, blit) {
+    add({ id: 'S07', at: st, shafts: 0.6, note: 'the rookie by the rail looking for a gap, worried; push-in', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d));
       stand(rookie, 1.45, -1, { mood: 'worried', look: [-0.6, 0.5], armL: [40, -40], blink: blink(t) });
       shoot(D, all, V3(3.0, 1.4, 2.6), V3(2.6, 1.3, 1.8), V3(0.9, 0.9, -1.8), null, k);
-      blit();
+      blit(); { const [hx, hy] = headXY(rookie, 1.55); FX.sweat(hx + 120, hy - 40, clamp((lt - 0.4) / 0.3)); }
     } });
     cue(st, 'tock', { gain: 0.6 }); }
 
   // ── S08 · "So on a scorching day, the steel shoves against itself," — glaring sun, thermometer climbs ──
   { const st = cut(7);
-    add({ id: 'S08', at: st, note: 'blazing sun glare, the rail straining (tiny shudder), thermometer in the red; crew wiping brows', draw(lt, d, t, blit) {
+    add({ id: 'S08', at: st, shafts: 1, note: 'blazing sun glare, the rail straining (tiny shudder), thermometer in the red; crew wiping brows', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d)), wob = Math.sin(t * 31) * 0.004 * clamp(lt / 1.2);
       layTrack({ off: (z) => wob * Math.sin(z * 0.8) });
       stand(oldhand, -1.7, -6, { mood: 'tired', armR: [150, 70], blink: blink(t) }); stand(rookie, 1.8, -5, { mood: 'worried', armL: [150, 70], blink: blink(t, 0.6) });
@@ -247,13 +249,13 @@ export function buildShots(E) {
 
   // ── S10 · "Crews call it a sun kink." — the crew stand beside the kink, the old hand deadpan ──
   { const st = cut(9);
-    add({ id: 'S10', at: st, note: 'ground level beside the kink: oldhand deadpan, rookie shocked, foreman points at it', draw(lt, d, t, blit) {
+    add({ id: 'S10', at: st, shafts: 0.5, note: 'ground level beside the kink: oldhand deadpan, rookie shocked, foreman points at it', draw(lt, d, t, blit) {
       reset(); layTrack({ off: kink(KZ, 1.1) }); const k = drift(clamp(lt / d));
       stand(oldhand, -1.3, KZ + 12, { mood: 'deadpan', look: [0.4, 0], blink: blink(t) });
       stand(rookie, 1.35, KZ + 12.6, { mood: 'shock', armL: [40, -40], armR: [40, -40], blink: blink(t, 0.5) });
       stand(foreman, 1.1, KZ + 9.0, { mood: 'neutral', armL: [100, 0], look: [-0.7, 0.3], blink: blink(t, 1.2) });
       shoot(D, all, V3(0.1, 1.9, KZ + 20), V3(0.05, 1.8, KZ + 18.6), V3(0, 0.7, KZ), null, k);
-      blit(); sunGlare(0.35);
+      blit(); sunGlare(0.35); { const [hx, hy] = headXY(rookie, 1.55); FX.sweat(hx + 70, hy - 50, clamp((lt - 0.3) / 0.3)); }
     } });
     cue(st, 'whoosh'); }
 
@@ -312,17 +314,17 @@ export function buildShots(E) {
 
   // ── S15 · "until it's as long as it will be on a hot summer day." — thermometer pinned at summer ──
   { const st = cut(14);
-    add({ id: 'S15', at: st, note: 'the long rail with a "summer" thermometer climbing high; crane up', draw(lt, d, t, blit) {
+    add({ id: 'S15', at: st, shafts: 0.9, note: 'the long rail with a "summer" thermometer climbing high; crane up', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d));
       stand(welder, 1.7, -2.5, { mood: 'smug', armL: [150, 10], holdR: P2.torch, blink: blink(t) });
       shoot(D, all, V3(-1.2, 1.2, 4), V3(-1.6, 2.6, 6), V3(0.5, 0.6, -6), V3(0, 0.3, -20), k);
-      blit(); thermo(880, 800, lerp(0.3, 0.95, eio(clamp(lt / (d * 0.7)))), lt > d * 0.6 ? 'SUMMER' : '');
+      blit(); thermo(880, 800, lerp(0.3, 0.95, eio(clamp(lt / (d * 0.7)))), lt > d * 0.6 ? 'SUMMER' : ''); FX.sparkle(880, 440, t, clamp((lt - d * 0.6) / 0.3), 80);
     } });
     cue(st, 'whoosh', { gain: 0.7 }); cue(st + 1.2, 'ding', { gain: 0.5 }); }
 
   // ── S16 · "Then summer has nothing left to push." — blazing sun, track dead straight, crew eating lunch ──
   { const st = cut(15);
-    add({ id: 'S16', at: st, note: 'full summer glare again, but the track stays perfectly straight; the crew sit on the rail eating lunch, content', draw(lt, d, t, blit) {
+    add({ id: 'S16', at: st, shafts: 1, note: 'full summer glare again, but the track stays perfectly straight; the crew sit on the rail eating lunch, content', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d));
       stand(oldhand, 0.85, -3.2, { mood: 'content', legs: 'sit', armR: [70, -40], holdR: PROPS.sandwich, blink: blink(t) }, 0.06);
       stand(rookie, 0.85, -4.6, { mood: 'laugh', legs: 'sit', armL: [14, 50], holdL: PROPS.pail, blink: blink(t, 0.6) }, 0.06);
@@ -334,7 +336,7 @@ export function buildShots(E) {
 
   // ── S17 · "And that's why the crew cooks the rail before they lock it down." — loop: torch, then the maul ──
   { const st = cut(16), hit = Wd('lock', 17);
-    add({ id: 'S17', at: st, note: 'loop to the opening: torch on the glowing rail, foreman swings the maul on "lock", deadpan into camera', draw(lt, d, t, blit) {
+    add({ id: 'S17', at: st, shafts: 0.6, note: 'loop to the opening: torch on the glowing rail, foreman swings the maul on "lock", deadpan into camera', draw(lt, d, t, blit) {
       reset(); const k = drift(clamp(lt / d)), sw = clamp((t - (hit - 0.35)) / 0.35);
       stand(welder, 1.35, WZ, { mood: 'content', armR: [40, 30], holdR: P2.torch, lean: -10, blink: blink(t) }, -0.35);
       stand(foreman, 1.25, WZ - 1.6, { mood: t > hit + 0.3 ? 'deadpan' : 'strain', armR: tween([160, 10], [40, 20], t, hit - 0.3, 0.3), holdR: PROPS.maul, lean: lerp(4, -12, sw), look: [0.3, 0], blink: blink(t, 1) });

@@ -9,6 +9,7 @@ import { camera } from './core/engine.js';
 import * as WD from './core/world.js';
 import * as CY from './core/canyon.js';
 import { Toon, PROPS, INK } from './core/toon.js';
+import * as FX from './core/fx.js';
 
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const mix = (a, b, k) => a.clone().lerp(b, k);
@@ -51,9 +52,10 @@ const megaphone = function megaphone(g, x, y, ang) { g.save(); g.translate(x, y)
   g.beginPath(); g.moveTo(-12, -10); g.lineTo(12, -10); g.lineTo(46, 110); g.lineTo(-46, 110); g.closePath(); g.fill(); g.stroke(); g.fillStyle = '#2A2A33'; g.beginPath(); g.ellipse(0, 110, 46, 12, 0, 0, 7); g.fill(); g.stroke(); g.restore(); };
 
 export function buildShots(E) {
-  const S = [], CUES = [], add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; f(lt, d, t, blit); }; S.push(o); return o; }, cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
+  const S = [], CUES = [], add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; f(lt, d, t, blit); if (!o.noMotes) FX.motes(t, { n: 22, col: o.lab ? '255,255,255' : '255,232,190' }); if (o.shafts) FX.shafts(t, { k: o.shafts, x: o.shaftX ?? CW * 0.8, angle: o.shaftA ?? 0.45 }); }; S.push(o); return o; }, cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
   const cut = (i) => (i === 0 ? 0 : L(i) - 0.06);
   const cam = camera(40);
+  const headXY = (p, up = 1.62) => { const v = p.group.position.clone(); v.y += up; v.project(cam); return [(v.x + 1) / 2 * CW, (1 - v.y) / 2 * CH]; };
   const LK = { bloom: 0.14, aperture: 0.0006, maxblur: 0.006 };
   const shoot = (scene, people, from, to, at, at2, k, look = LK, shake = 0, t = 0) => {
     const fov = look.fov || 40; if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
@@ -195,7 +197,7 @@ export function buildShots(E) {
 
   // ── S01 · "In old Western movies, the cowboy who draws first always loses." — the standoff; villain draws, hero's BANG ──
   { const st = cut(0), dr = Wd('draws', 0), ls = Wd('loses', 0);
-    add({ id: 'S01', at: st, note: 'low over the villain\'s shoulder down the street at the hero; tumbleweed; villain draws on "draws first", hero draws later but his BANG flag pops first and the villain\'s hat flies off on "loses"', draw(lt, d, t, blit) {
+    add({ id: 'S01', at: st, shafts: 0.7, note: 'low over the villain\'s shoulder down the street at the hero; tumbleweed; villain draws on "draws first", hero draws later but his BANG flag pops first and the villain\'s hat flies off on "loses"', draw(lt, d, t, blit) {
       townReset(); const k = drift(clamp(lt / d)), fl = clamp((t - (ls - 0.15)) / 0.2);
       hatOn(villain, t < ls); stand(villain, VX, 1.0, vPose(t, dr, 0, t > ls ? 'shock' : undefined)); if (t > dr + 0.05) armed(villain, 1);
       stand(hero, HX, -0.6, hPose(t, ls - 0.35, fl)); if (t > ls - 0.3) armed(hero, -1, false, fl);
@@ -207,11 +209,11 @@ export function buildShots(E) {
 
   // ── S02 · "Physicist Niels Bohr thought he knew why." — Bohr at the chalkboard, an idea "!" ──
   { const st = cut(1), wy = Wd('why', 1);
-    add({ id: 'S02', at: st, note: 'Bohr at the chalkboard (two stick cowboys: 1st / 2nd); a "!" bubble pops on "why"', draw(lt, d, t, blit) {
+    add({ id: 'S02', at: st, shafts: 0.9, shaftX: CW * 0.25, shaftA: -0.3, note: 'Bohr at the chalkboard (two stick cowboys: 1st / 2nd); a "!" bubble pops on "why"', draw(lt, d, t, blit) {
       instReset(); const k = drift(clamp(lt / d));
       stand(bohr, 0.3, -5.6, { mood: t > wy - 0.2 ? 'happy' : 'neutral', armL: [150, 10], look: [-0.5, -0.2], blink: blink(t) });
       shoot(INST.scene, inst, V3(0.6, 1.6, -1.2), V3(0.4, 1.6, -2.0), V3(-0.25, 1.7, -6.4), null, k);
-      blit(); sepia(0.35); bubble(760, 520, '!', clamp((t - (wy - 0.2)) / 0.25));
+      blit(); sepia(0.35); bubble(760, 520, '!', clamp((t - (wy - 0.2)) / 0.25)); FX.sparkle(760, 520, t, clamp((t - wy) / 0.25) * (1 - clamp((t - wy - 0.6) / 0.3)), 90);
     } });
     cue(st, 'whoosh'); cue(Wd('why', 1) - 0.2, 'ding', { gain: 0.7 }); }
 
@@ -237,7 +239,7 @@ export function buildShots(E) {
 
   // ── S05 · "The story goes, he tested it with toy pistols against his friend George Gamow," — the office duel ──
   { const st = cut(4), tp = Wd('toy', 4), gm = Wd('George', 4);
-    add({ id: 'S05', at: st, note: 'in the institute: Bohr and Gamow face off between the desks; on "toy pistols" both hold bright toy guns; push in on Gamow at his name', draw(lt, d, t, blit) {
+    add({ id: 'S05', at: st, shafts: 0.8, shaftX: CW * 0.25, shaftA: -0.3, note: 'in the institute: Bohr and Gamow face off between the desks; on "toy pistols" both hold bright toy guns; push in on Gamow at his name', draw(lt, d, t, blit) {
       instReset(); const k = drift(clamp(lt / d));
       const armd = t > tp;
       stand(bohr, -0.75, -3.2, { mood: 'sly', armR: armd ? [20, -20] : HOVER, blink: blink(t) }); if (armd) armed(bohr, 1, true);
@@ -249,18 +251,18 @@ export function buildShots(E) {
 
   // ── S06 · "and Bohr won every single duel." — Gamow draws, Bohr's flag pops first; a tally of wins ──
   { const st = cut(5), gd = st + 0.25, bf = st + 0.7;
-    add({ id: 'S06', at: st, note: 'Gamow raises first, Bohr reacts and his BANG flag pops first; Gamow sulks; tally counts Bohr\'s wins', draw(lt, d, t, blit) {
+    add({ id: 'S06', at: st, shafts: 0.8, shaftX: CW * 0.25, shaftA: -0.3, note: 'Gamow raises first, Bohr reacts and his BANG flag pops first; Gamow sulks; tally counts Bohr\'s wins', draw(lt, d, t, blit) {
       instReset(); const k = drift(clamp(lt / d)), fl = clamp((t - bf) / 0.2);
       stand(bohr, -0.75, -3.2, { mood: t > bf ? 'smug' : 'sly', armR: tween([20, -20], AIM, t, bf - 0.2, 0.12), blink: blink(t) }); armed(bohr, 1, true, fl);
       stand(gamow, 0.8, -3.6, { mood: t > bf + 0.1 ? 'tired' : 'angry', armL: tween([20, -20], AIM, t, gd, 0.3), blink: blink(t, 0.8) }); armed(gamow, -1, true);
       shoot(INST.scene, inst, V3(0.1, 1.5, 1.6), V3(0.0, 1.45, 1.1), V3(0.0, 1.3, -3.4), null, k);
-      blit(); sepia(0.35); tally(Math.min(12, Math.floor(clamp((lt - 0.5) / (d - 0.7)) * 12)), 540, 380);
+      blit(); sepia(0.35); { const [hx, hy] = headXY(gamow); FX.sweat(hx + 70, hy - 40, clamp((t - bf - 0.1) / 0.3)); } tally(Math.min(12, Math.floor(clamp((lt - 0.5) / (d - 0.7)) * 12)), 540, 380);
     } });
     cue(st + 0.7, 'pop', { gain: 1.0 }); for (let i = 0; i < 6; i++) cue(st + 0.75 + i * 0.2, 'tock', { gain: 0.5 }); }
 
   // ── S07 · "Then in 2010, scientists in Birmingham ran lab gunfights," — the modern lab, "2010" ──
   { const st = cut(6), gf = Wd('gunfights', 6);
-    add({ id: 'S07', at: st, note: 'bright modern lab: two volunteers face each other across a table with button boxes, the scientist with a clipboard; big "2010"', draw(lt, d, t, blit) {
+    add({ id: 'S07', at: st, lab: true, note: 'bright modern lab: two volunteers face each other across a table with button boxes, the scientist with a clipboard; big "2010"', draw(lt, d, t, blit) {
       labReset(); const k = drift(clamp(lt / d));
       stand(vol1, -1.05, -3.2, { mood: 'angry', armR: [60, -30], look: [0.6, 0.2], blink: blink(t) }); stand(vol2, 1.05, -3.2, { mood: 'sly', armL: [60, -30], look: [-0.6, 0.2], blink: blink(t, 1) });
       stand(prof, 1.6, -5.2, { mood: 'neutral', armR: [40, -60], holdR: clip, blink: blink(t, 0.4) });
@@ -271,7 +273,7 @@ export function buildShots(E) {
 
   // ── S08 · "with buttons instead of guns." — close on the button boxes lighting up in a race ──
   { const st = cut(7);
-    add({ id: 'S08', at: st, note: 'close over the table: two button boxes, the buttons light up one after another as both race', draw(lt, d, t, blit) {
+    add({ id: 'S08', at: st, lab: true, note: 'close over the table: two button boxes, the buttons light up one after another as both race', draw(lt, d, t, blit) {
       labReset(); const k = drift(clamp(lt / d));
       lightBtns(0, Math.floor(clamp((lt - 0.2) / 0.8) * 3.99)); lightBtns(1, Math.floor(clamp((lt - 0.3) / 0.75) * 3.99));
       stand(vol1, -1.05, -3.2, { mood: 'strain', armR: [50, -10], blink: blink(t) }); stand(vol2, 1.05, -3.2, { mood: 'strain', armL: [50, -10], blink: blink(t, 1) });
@@ -282,7 +284,7 @@ export function buildShots(E) {
 
   // ── S09 · "And Bohr was right!" — Bohr proud at the board, a big green tick ──
   { const st = cut(8);
-    add({ id: 'S09', at: st, note: 'Bohr beams at the chalkboard, a big green tick', draw(lt, d, t, blit) {
+    add({ id: 'S09', at: st, shafts: 0.9, shaftX: CW * 0.25, shaftA: -0.3, note: 'Bohr beams at the chalkboard, a big green tick', draw(lt, d, t, blit) {
       instReset(); const k = drift(clamp(lt / d));
       stand(bohr, 0.5, -5.6, { mood: 'proud', armR: [150, 10], blink: blink(t) });
       shoot(INST.scene, inst, V3(0.6, 1.6, -2.4), V3(0.6, 1.6, -2.9), V3(0.2, 1.6, -5.6), null, k);
@@ -293,7 +295,7 @@ export function buildShots(E) {
 
   // ── S10 · "Reacting really is faster, by twenty-one milliseconds." — the bar chart over the lab ──
   { const st = cut(9);
-    add({ id: 'S10', at: st, note: 'over a soft-focus lab: two bars, FIRST TO MOVE vs REACTING; the reacting bar is shorter, "−21 ms"', draw(lt, d, t, blit) {
+    add({ id: 'S10', at: st, lab: true, note: 'over a soft-focus lab: two bars, FIRST TO MOVE vs REACTING; the reacting bar is shorter, "−21 ms"', draw(lt, d, t, blit) {
       labReset(); const k = drift(clamp(lt / d)); lightBtns(0, 3); lightBtns(1, 3);
       stand(vol1, -1.05, -3.2, { mood: 'tired', blink: blink(t) }); stand(vol2, 1.05, -3.2, { mood: 'happy', armL: [150, 10], blink: blink(t, 1) });
       shoot(LAB.scene, lab, V3(0, 1.6, 2.4), V3(0, 1.6, 1.8), V3(0, 1.3, -3.3), null, k, { ...LK, fov: 50, aperture: 0.004, maxblur: 0.012, focus: 1.0 });
@@ -303,7 +305,7 @@ export function buildShots(E) {
 
   // ── S11 · "But here's the catch." — back on the street: a slow, dramatic push-in on the hero ──
   { const st = cut(10);
-    add({ id: 'S11', at: st, note: 'street, dramatic push-in on the hero\'s squinting deadpan; tumbleweed crosses', draw(lt, d, t, blit) {
+    add({ id: 'S11', at: st, shafts: 0.8, note: 'street, dramatic push-in on the hero\'s squinting deadpan; tumbleweed crosses', draw(lt, d, t, blit) {
       townReset(); const k = drift(clamp(lt / d));
       stand(hero, HX, -0.2, hPose(t, 99, 0, 'sly')); weedAt(lerp(-1, 6, k), t + 3);
       shoot(TOWN, town, V3(HX - 1.6, 1.5, 4.2), V3(HX - 0.8, 1.6, 1.8), V3(HX, 1.6, -0.2), null, k);
@@ -318,7 +320,7 @@ export function buildShots(E) {
       stand(villain, VX, 0.4, { mood: 'angry', armR: [lerp(HOVER[0], AIM[0], eio(sl)), lerp(HOVER[1], AIM[1], eio(sl))], blink: 0 }); if (sl > 0.1) armed(villain, 1);
       stand(hero, HX, -1.0, hPose(t, 99, 0, t > mv ? 'shock' : 'sly'));
       shoot(TOWN, town, V3(HX + 3.0, 1.45, -2.2), V3(HX + 2.6, 1.42, -2.05), V3(VX, 1.3, 0.4), null, k, { ...LK, focus: 9, fov: 32 });
-      blit(); vignette(); watch(540, 500, 200 * clamp((lt - 0.2) / (d - 0.5)), clamp((lt - 0.1) / 0.25));
+      blit(); vignette(); { const [hx, hy] = headXY(hero, 1.3); FX.sweat(hx - 120, hy, clamp((t - mv - 0.1) / 0.3)); } watch(540, 500, 200 * clamp((lt - 0.2) / (d - 0.5)), clamp((lt - 0.1) / 0.25));
     } });
     cue(st + 0.1, 'pop', { gain: 0.5 }); cue(st + 0.3, 'heartbeat', { gain: 0.6 }); }
 
@@ -336,7 +338,7 @@ export function buildShots(E) {
 
   // ── S14 · "The scientists' verdict on Bohr?" — the scientist checks the clipboard ──
   { const st = cut(13);
-    add({ id: 'S14', at: st, note: 'the scientist in the lab lowers his clipboard, eyebrow raised', draw(lt, d, t, blit) {
+    add({ id: 'S14', at: st, lab: true, note: 'the scientist in the lab lowers his clipboard, eyebrow raised', draw(lt, d, t, blit) {
       labReset(); const k = drift(clamp(lt / d));
       stand(prof, 0.3, -3.8, { mood: 'sly', armR: [60, -60], holdR: clip, look: [-0.3, 0], blink: blink(t) });
       shoot(LAB.scene, lab, V3(0.9, 1.6, -1.2), V3(0.7, 1.6, -1.7), V3(0.3, 1.55, -3.8), null, k);
@@ -346,7 +348,7 @@ export function buildShots(E) {
 
   // ── S15 · "He was probably just a really good shot." — Bohr twirls his toy pistol, Gamow sulks ──
   { const st = cut(14);
-    add({ id: 'S15', at: st, note: 'Bohr blows on his toy pistol and grins, smug; Gamow behind with folded arms, tired', draw(lt, d, t, blit) {
+    add({ id: 'S15', at: st, shafts: 0.9, shaftX: CW * 0.25, shaftA: -0.3, note: 'Bohr blows on his toy pistol and grins, smug; Gamow behind with folded arms, tired', draw(lt, d, t, blit) {
       instReset(); const k = drift(clamp(lt / d));
       stand(bohr, -0.2, -3.2, { mood: 'smug', armR: [150, -150 + Math.sin(t * 9) * 8], blink: blink(t) }); armed(bohr, 1, true);
       stand(gamow, 0.9, -4.8, { mood: 'tired', armL: [40, -110], armR: [40, -110], blink: blink(t, 0.8) });
@@ -357,7 +359,7 @@ export function buildShots(E) {
 
   // ── S16 · "So next time a movie cowboy waits to draw second," — the standoff again (the opening frame) ──
   { const st = cut(15);
-    add({ id: 'S16', at: st, note: 'back to the opening standoff composition; the hero squints, waiting', draw(lt, d, t, blit) {
+    add({ id: 'S16', at: st, shafts: 0.7, note: 'back to the opening standoff composition; the hero squints, waiting', draw(lt, d, t, blit) {
       townReset(); const k = drift(clamp(lt / d));
       stand(villain, VX, 1.0, vPose(t, 99)); stand(hero, HX, -0.6, hPose(t, 99, 0, 'sly')); weedAt(lerp(-3, 3, k), t);
       shoot(TOWN, town, V3(VX - 3.0, 1.45, 2.2), V3(VX - 2.6, 1.42, 2.05), V3(HX, 1.3, -0.6), null, k, { ...LK, focus: 9, fov: 32 });
