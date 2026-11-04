@@ -1,0 +1,33 @@
+{
+  "title": "Why the Cowboy Who Draws First Loses #shorts",
+  "voice": "am_puck",
+  "speed": 1.1,
+  "lead": 0.2,
+  "outro": 1.0,
+  "gap": 0.12,
+  "music": "quirk",
+  "sources": [
+    "University of Birmingham news release, 'The quick and the dead' (3 Feb 2010), and EurekAlert / BBSRC release: Niels Bohr suggested the gunslinger who draws second is faster because he reacts; Andrew Welchman's team ran 'laboratory gunfights' with rows of buttons instead of guns; reacting participants moved on average 21 milliseconds faster; Bohr reportedly tested his idea in toy-pistol duels with George Gamow and won every time; 'probably just a very good shot'",
+    "National Geographic (Ed Yong, 2 Feb 2010), 'Why does the gunslinger who draws first always get shot?': reactors executed the movement about 10% faster (21 ms), but that benefit was overwhelmed by the roughly 200 milliseconds it took to react in the first place, so reactors very rarely beat initiators; Bohr's wins were anecdotal",
+    "Welchman et al. 2010, 'The quick and the dead: when reaction beats intention', Proceedings of the Royal Society B, doi:10.1098/rspb.2009.2123"
+  ],
+  "lines": [
+    { "text": "In old Western movies, the cowboy who draws first always loses.", "caps": "In old | Western movies, | the cowboy | who draws first | always loses." },
+    { "text": "Physicist Niels Bohr thought he knew why.", "caps": "Physicist | Niels Bohr | thought | he knew why." },
+    { "text": "The guy who reacts doesn't have to think,", "caps": "The guy | who reacts | doesn't have | to think," },
+    { "text": "so his hand moves faster.", "caps": "so his hand | moves faster." },
+    { "text": "The story goes, he tested it with toy pistols against his friend George Gamow,", "caps": "The story goes, | he tested it | with toy pistols | against his friend | George Gamow," },
+    { "text": "and Bohr won every single duel.", "caps": "and Bohr won | every single | duel." },
+    { "text": "Then in 2010, scientists in Birmingham ran lab gunfights,", "caps": "Then in 2010, | scientists | in Birmingham | ran lab | gunfights," },
+    { "text": "with buttons instead of guns.", "caps": "with buttons | instead | of guns." },
+    { "text": "And Bohr was right!", "caps": "And Bohr | was right!" },
+    { "text": "Reacting really is faster, by twenty-one milliseconds.", "caps": "Reacting | really is faster, | by twenty-one | milliseconds." },
+    { "text": "But here's the catch.", "caps": "But here's | the catch." },
+    { "text": "Just noticing the other guy move takes about two hundred.", "caps": "Just noticing | the other guy | move | takes about | two hundred." },
+    { "text": "So the one who draws second still almost always loses.", "caps": "So the one | who draws second | still almost | always loses." },
+    { "text": "The scientists' verdict on Bohr?", "caps": "The scientists' | verdict | on Bohr?" },
+    { "text": "He was probably just a really good shot.", "caps": "He was | probably | just a really | good shot." },
+    { "text": "So next time a movie cowboy waits to draw second,", "caps": "So next time | a movie cowboy | waits | to draw second," },
+    { "text": "he's not faster. He's just in a movie.", "caps": "he's not faster. | He's just | in a movie." }
+  ]
+}

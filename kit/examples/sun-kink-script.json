@@ -1,0 +1,89 @@
+{
+  "title": "The Train Track That Bent in the Sun #shorts",
+  "voice": "am_puck",
+  "speed": 1.1,
+  "lead": 0.2,
+  "outro": 1.0,
+  "gap": 0.12,
+  "music": "quirk",
+  "sources": [
+    "FRA / Railway Track & Structures (May 2023), 'Advanced Tools for Managing Continuous Welded Rail': welded rail is restrained from expanding and contracting; compressive forces in summer can cause track buckles, also called sun kinks; tensile forces in winter lead to pull-aparts; railroads want a high rail neutral temperature, so the rail is artificially lengthened by mechanical stretching or heating",
+    "FRA Safety Advisory 2012-03 (Federal Register, July 16, 2012): on July 4, 2012 a BNSF train crew noticed a sun kink ahead near Pendleton, Texas, tried to stop but could not, and 43 loaded coal cars derailed",
+    "Wikipedia, 'Rail stressing': before it is fixed, continuous welded rail is stretched with hydraulic tensors or heated to its stress-free temperature so it doesn't buckle in heat",
+    "WBTV (2010): before about 1950 rail came in 39-foot sections with room left at the joints for the steel to expand; heat 'slow orders' tell crews to go slowly over suspect track"
+  ],
+  "lines": [
+    {
+      "text": "Why do railroad crews heat up a steel rail",
+      "caps": "Why do | railroad crews | heat up | a steel rail"
+    },
+    {
+      "text": "before they lock it down?",
+      "caps": "before they | lock it down?"
+    },
+    {
+      "text": "Old track came in short pieces,",
+      "caps": "Old track | came in | short pieces,"
+    },
+    {
+      "text": "with little gaps for the steel to grow in the heat.",
+      "caps": "with little gaps | for the steel | to grow | in the heat."
+    },
+    {
+      "text": "That's the clickety-clack.",
+      "caps": "That's the | clickety-clack."
+    },
+    {
+      "text": "Today, the rail is welded into one long ribbon.",
+      "caps": "Today, | the rail | is welded | into one | long ribbon."
+    },
+    {
+      "text": "No gaps. Nowhere to grow.",
+      "caps": "No gaps. | Nowhere | to grow."
+    },
+    {
+      "text": "So on a scorching day, the steel shoves against itself,",
+      "caps": "So on a | scorching day, | the steel | shoves | against itself,"
+    },
+    {
+      "text": "until the track jumps sideways into a squiggle.",
+      "caps": "until the track | jumps sideways | into a squiggle."
+    },
+    {
+      "text": "Crews call it a sun kink.",
+      "caps": "Crews call it | a sun kink."
+    },
+    {
+      "text": "In Texas, a crew spotted one ahead and couldn't stop.",
+      "caps": "In Texas, | a crew | spotted one | ahead | and couldn't stop."
+    },
+    {
+      "text": "Forty-three coal cars came off the track.",
+      "caps": "Forty-three | coal cars | came off | the track."
+    },
+    {
+      "text": "So now, before the rail is clamped down,",
+      "caps": "So now, | before the rail | is clamped down,"
+    },
+    {
+      "text": "they heat it, or stretch it with hydraulic jacks,",
+      "caps": "they heat it, | or stretch it | with hydraulic | jacks,"
+    },
+    {
+      "text": "until it's as long as it will be on a hot summer day.",
+      "caps": "until it's | as long | as it will be | on a hot | summer day."
+    },
+    {
+      "text": "Then summer has nothing left to push.",
+      "caps": "Then summer | has nothing | left | to push."
+    },
+    {
+      "text": "And that's why the crew cooks the rail",
+      "caps": "And that's why | the crew | cooks | the rail"
+    },
+    {
+      "text": "before they lock it down.",
+      "caps": "before they | lock it down."
+    }
+  ]
+}
