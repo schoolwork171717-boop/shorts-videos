@@ -96,3 +96,7 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
 - Voice: `"voice": "clone"`, speed 1.12, via `tools/clone_voice.py` + `voice/narrator.wav` (speaker similarity ~0.85-0.9
   to the reference vs 0.70 for the old Kokoro blend; pitch ~190 Hz; pace ~3.6 words/s like the reference).
 - Cloning model: Kyutai Pocket TTS (CC-BY 4.0 per its license file), WeSpeaker + Whisper base.en for take selection.
+- After every upload, set the language: YouTube sometimes guesses the audio language wrong (the sun-kink Short was
+  marked Tamil). With Zapier YouTube "Make API Mutating Request": PUT https://www.googleapis.com/youtube/v3/videos
+  ?part=snippet with the video's id and its full snippet (title, description, tags, categoryId) plus
+  "defaultLanguage": "en", "defaultAudioLanguage": "en".
