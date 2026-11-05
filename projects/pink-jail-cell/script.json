@@ -1,0 +1,60 @@
+{
+  "title": "Why Jails Painted Their Cells Bubblegum Pink #shorts",
+  "voice": "clone",
+  "speed": 1.12,
+  "tries": 5,
+  "lead": 0.12,
+  "gap": 0.04,
+  "outro": 0.6,
+  "music": "bright",
+  "lines": [
+    {
+      "text": "Could one color calm down an angry prisoner?"
+    },
+    {
+      "text": "A scientist thought so."
+    },
+    {
+      "text": "He stared at a bubblegum pink card,"
+    },
+    {
+      "text": "and his heartbeat slowed down!"
+    },
+    {
+      "text": "So a Navy jail let him test it."
+    },
+    {
+      "text": "They painted a whole cell pink, floor to ceiling."
+    },
+    {
+      "text": "Furious new prisoners went in,"
+    },
+    {
+      "text": "and in fifteen minutes, they calmed right down!"
+    },
+    {
+      "text": "Soon jails everywhere were painting cells pink."
+    },
+    {
+      "text": "A football coach even painted the other team's locker room pink!"
+    },
+    {
+      "text": "But here's the twist."
+    },
+    {
+      "text": "When scientists tested it again, the calm wore off fast,"
+    },
+    {
+      "text": "and a plain gray cell worked just as well."
+    },
+    {
+      "text": "So can a color calm you down? Maybe, for about fifteen minutes."
+    }
+  ],
+  "sources": [
+    "Wikipedia, 'Baker-Miller pink': Alexander Schauss tested color responses; staring at a card of the pink reportedly lowered heart rate, pulse and respiration; in 1979 a Navy correctional facility in Seattle painted confinement cells pink (named after directors Baker and Miller); the Navy reported no hostile incidents after March 1, 1979 and that 15 minutes of exposure reduced aggression",
+    "Wikipedia, 'Baker-Miller pink': University of Iowa coach Hayden Fry had the visiting team's locker room at Kinnick Stadium painted pink (1979)",
+    "Wikipedia, 'Baker-Miller pink': Santa Clara County jail saw inmates calm after 15 minutes but a reverse effect after 20 minutes; Gilliam and Unruh (1988) contradicted the heart-rate claims; Genschow et al. (2014, 59 prisoners) found aggression fell in both pink and gray cells with no difference by color",
+    "Mental Floss, 'Soothe Yourself With Drunk Tank Pink' (15 minutes of exposure; Iowa locker room)"
+  ]
+}
