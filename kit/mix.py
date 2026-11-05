@@ -9,7 +9,7 @@ track, any format ffmpeg reads). The music ducks under the voice.
 
 Sound rules (STYLE.md): every effect is soft and rounded, nothing above ~5 kHz, no ticks / hats / glitches / beeps.
 Music: bed tension bounce quirk dry epic.  Voice: script.json "energize": {"up": 1.5, "expr": 1.4} (needs pyworld).
-Cue types: whoosh slide pop plop gulp boing bubbles sizzle sparkle thud slam tock zip alarm  (+ gain, dur)
+Cue types: swoosh (camera moves; + sweep: -1..1 pan glide) whoosh slide pop plop gulp boing bubbles sizzle sparkle thud slam tock zip alarm  (+ gain, dur)
 """
 import json, subprocess, sys
 from pathlib import Path
@@ -108,9 +108,20 @@ def chug(d=2.0, **_):
 def stampit(**_):
     t = tt(0.18); x = np.sin(2 * np.pi * 95 * t) * env(len(t), 0.001, 10) + bp(noise(0.18), 1500, 5000) * env(len(t), 0.001, 14) * 0.6; return x * 0.9
 
-FX = dict(ding=ding, chirp=chirp, chug=chug, stamp=stampit, inhale=inhale, heartbeat=heartbeat, whoosh=whoosh, slide=slide, pop=pop, plop=plop, gulp=gulp, boing=boing, bubbles=bubbles, sizzle=sizzle,
+def swoosh(d=0.5, **_):
+    """camera-move swoosh: airy noise whose brightness rises then falls, a soft low whoom underneath (pans if the cue says so)"""
+    n = int(d * SR); t = np.arange(n) / SR; k = t / d
+    x = noise(d); out = np.zeros(n); seg_ = 512
+    for i in range(0, n, seg_):                                       # time-varying band-pass, block by block
+        kk = (i + seg_ / 2) / n; fc = 350 + 2600 * np.sin(np.pi * min(1, kk * 1.15)) ** 1.5
+        out[i:i + seg_] = bp(x[max(0, i - 2048):i + seg_], fc * 0.6, min(fc * 1.6, SR / 2 - 200))[-len(out[i:i + seg_]):]
+    shape = np.where(k < 0.62, (k / 0.62) ** 2, np.exp(-(k - 0.62) * 9))
+    whoom = np.sin(2 * np.pi * np.cumsum(70 - 30 * k) / SR) * shape * 0.35
+    return out * shape + whoom
+
+FX = dict(swoosh=swoosh, ding=ding, chirp=chirp, chug=chug, stamp=stampit, inhale=inhale, heartbeat=heartbeat, whoosh=whoosh, slide=slide, pop=pop, plop=plop, gulp=gulp, boing=boing, bubbles=bubbles, sizzle=sizzle,
           sparkle=sparkle, thud=thud, slam=slam, tock=tock, zip=zip_, alarm=alarm)
-LEVEL = dict(ding=-17, chirp=-19, chug=-20, stamp=-12, inhale=-15, heartbeat=-8, whoosh=-17, slide=-19, pop=-14, plop=-15, gulp=-11, boing=-15, bubbles=-21, sizzle=-18, sparkle=-17,
+LEVEL = dict(swoosh=-15, ding=-17, chirp=-19, chug=-20, stamp=-12, inhale=-15, heartbeat=-8, whoosh=-17, slide=-19, pop=-14, plop=-15, gulp=-11, boing=-15, bubbles=-21, sizzle=-18, sparkle=-17,
              thud=-11, slam=-9, tock=-18, zip=-14, alarm=-17)
 
 
@@ -334,7 +345,10 @@ for c in cj['cues']:
     x = fn(**({'d': c['dur']} if c.get('dur') else {}))
     x = lp(x, 5000) * db(LEVEL[c['type']]) * c.get('gain', 1.0) / (np.abs(x).max() + 1e-9) * 0.9
     i = int(c['t'] * SR); n = min(len(x), N - i)
-    if n > 0 and i >= 0: pan = c.get('pan', 0.0); mix[i:i + n, 0] += x[:n] * (1 - max(0, pan)); mix[i:i + n, 1] += x[:n] * (1 + min(0, pan))
+    if n > 0 and i >= 0:
+        if c.get('sweep'):                                            # pan glides across the stereo field (camera moves)
+            sv = float(c['sweep']); pn = np.linspace(-sv, sv, n); mix[i:i + n, 0] += x[:n] * np.clip(1 - pn, 0, 1); mix[i:i + n, 1] += x[:n] * np.clip(1 + pn, 0, 1)
+        else: pan = c.get('pan', 0.0); mix[i:i + n, 0] += x[:n] * (1 - max(0, pan)); mix[i:i + n, 1] += x[:n] * (1 + min(0, pan))
 # master: gentle soft-clip, peak -1 dBFS
 mix = np.tanh(mix * 1.2) / 1.2
 mix *= db(-1) / (np.abs(mix).max() + 1e-9)

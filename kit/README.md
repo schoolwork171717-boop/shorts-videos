@@ -11,13 +11,15 @@ After building the Iron Canyon style and creating a project, copy these over the
 script.json defaults for every new Short:
 
 ```json
-{ "voice": "am_fenrir", "speed": 1.15, "lead": 0.2, "gap": 0.1, "outro": 1.0, "music": "epic", "energize": { "up": 1.5, "expr": 1.4 } }
+{ "voice": "am_fenrir:0.5+am_puck:0.25+am_eric:0.25", "speed": 1.2, "lead": 0.2, "gap": 0.1, "outro": 1.0, "music": "epic" }
 ```
 
-am_fenrir at 1.15 + "energize" (WORLD vocoder in mix.py: +1.5 semitones, 40 % more pitch movement, same timing) is an
-excited storyteller with a dry wit. Write with energy: questions, sound words ("Clang!"), exclamation marks on big beats.
-Music "epic" (original adventure bed) for grand/historical stories, "dry" for quiet ones. Needs pyworld (setup installs it).
-Check after mix.py: loudness about -14 to -15 LUFS, true peak -1 dB.
+The voice is a natural blend of three Kokoro voices (the deadpan narrator, the younger Puck, the brighter Eric) at 1.2x:
+upbeat and trendy, with NO audio processing (the old WORLD "energize" step made it sound robotic; leave it off).
+Generate it with the kit copy of voice.py, which understands blends:
+`~/.faceless-shorts/venv/bin/python tools/voice.py .` (setup copies it into the project's tools/), then words.py as usual.
+Write for tweens and teens: short punchy sentences, "you" framing, wonder and drama, a few exclamation marks.
+Music "epic" for grand stories, "dry" for quiet ones, "quirk" for silly ones.
 
 ## Animation, not cuts
 Viewers notice when a Short is a slideshow. Every shot is a little scene where something happens on camera:
@@ -60,3 +62,12 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
 - `main.js`: transitions `trans: 'zoom' | 'whip' | 'dissolve'`, `cut: true`.
 - `engine.js`: majestic grade (`GRADE_DEFAULT`, per frame `look.grade`).
 - `han.js` / `beasts.js`: Han palace sets, the seismoscope jar, a galloping horse. Example: `examples/jar-shots.js`.
+
+## v5 additions
+- **Swooshes on camera moves:** call `A.autoSwoosh(S, cue, CUES)` at the end of buildShots: every `trans: 'zoom'|'whip'`
+  shot gets a stereo swoosh (the whip pans with its direction); list extra fast moves inside a shot as `moves: [t, ...]`.
+  mix.py has the new `swoosh` cue (`sweep: -1..1` pans it across).
+- **Magnificent layer (fx.js):** `FX.petals` (tumbling blossoms), `FX.orbs` (glowing bokeh), `FX.godray(x, y, t, { k })`
+  (radiant burst behind a reveal), `FX.speedLines(t, k, cx, cy)` (shock / impact / fast zoom), `FX.vignetteGlow`.
+- **Squash & stretch (act.js):** `sq: A.squashHop(t, t0, dur)` with every hop (act() applies it via `A.applySquash`),
+  `A.flicker(t, seed)` for lantern lights.

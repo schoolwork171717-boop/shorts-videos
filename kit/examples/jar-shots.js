@@ -53,7 +53,7 @@ export function buildShots(E) {
   // every person is always alive: eye darts, blinks, head sway, breathing. o = mood timeline result + pose overrides
   const act = (p, x, z, o = {}, y = 0) => {
     const al = A.alive(NOW, p.seed, o.alive ?? 1); p.group.visible = true;
-    p.at(x, y + (o.hopY || 0), z).set({ look: al.look, blink: al.blink, tilt: al.tilt, bob: o.legs === 'walk' || o.legs === 'run' ? 0 : al.bob, ...o });
+    p.at(x, y + (o.hopY || 0), z).set({ look: al.look, blink: al.blink, tilt: al.tilt, bob: o.legs === 'walk' || o.legs === 'run' ? 0 : al.bob, ...o }); A.applySquash(p, o.sq || 0);
   };
   const big = (txt, x, y, s, k, col = '#FFFFFF', rot = 0) => { if (k <= 0) return; const sc = eob(clamp(k)); ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(sc, sc); ctx.font = `900 ${s}px Inter`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
     ctx.lineWidth = s * 0.2; ctx.strokeStyle = INK; ctx.strokeText(txt, 0, 0); ctx.fillStyle = col; ctx.fillText(txt, 0, 0); ctx.restore(); };
@@ -94,11 +94,11 @@ export function buildShots(E) {
   { const st = Wd('earthquake', 0) - 0.35, hd = Wd('hundreds', 0);
     add({ id: 'S02', at: st, trans: 'zoom', shafts: 0.6, note: 'wide on the jar: rivals hop in shock, Zhang Heng in front turns to camera with a proud grin; overlay pops on "hundreds"', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, zhang, rivA, rivB); J.update(t, { drop: 0, k: 1, glow: 0.6 });
-      act(rivA, -1.15, 1.75, { ...A.face(t, [[0, 'neutral'], [st + 0.1, 'gasp'], [st + 1.0, 'shock']]), armL: A.keys(t, [[0, [12, 10]], [st + 0.1, [150, 40]]]), armR: A.keys(t, [[0, [12, 10]], [st + 0.12, [150, 40]]]), hopY: A.hop(t, st + 0.1, 0.35, 0.35) });
-      act(rivB, 1.25, 1.65, { ...A.face(t, [[0, 'neutral'], [st + 0.15, 'shock'], [st + 1.1, 'worried']]), armR: A.keys(t, [[0, [12, 10]], [st + 0.15, [100, 80]]]), holdR: P2.fan, hopY: A.hop(t, st + 0.15, 0.35, 0.3) });
+      act(rivA, -1.15, 1.75, { ...A.face(t, [[0, 'neutral'], [st + 0.1, 'gasp'], [st + 1.0, 'shock']]), armL: A.keys(t, [[0, [12, 10]], [st + 0.1, [150, 40]]]), armR: A.keys(t, [[0, [12, 10]], [st + 0.12, [150, 40]]]), hopY: A.hop(t, st + 0.1, 0.35, 0.35), sq: A.squashHop(t, st + 0.1, 0.35) });
+      act(rivB, 1.25, 1.65, { ...A.face(t, [[0, 'neutral'], [st + 0.15, 'shock'], [st + 1.1, 'worried']]), armR: A.keys(t, [[0, [12, 10]], [st + 0.15, [100, 80]]]), holdR: P2.fan, hopY: A.hop(t, st + 0.15, 0.35, 0.3), sq: A.squashHop(t, st + 0.15, 0.35) });
       act(zhang, 0.2, 2.6, { ...A.face(t, [[0, 'happy'], [st + 0.5, 'proud'], [hd, 'excited']]), armL: A.keys(t, [[0, [20, 10]], [st + 0.5, [60, -60]], [hd, [150, 20]]]), armR: A.keys(t, [[0, [20, 10]], [hd + 0.08, [150, 20]]]), tilt: -6 });
       shoot(HALL.scene, [zhang, rivA, rivB], mix(V3(0.3, 2.0, 8.8), V3(0.2, 1.8, 7.2), drift(clamp(lt / d))), V3(0.1, 1.6, 0.6), { ...LK, fov: 42 });
-      blit(); big('HUNDREDS OF', 540, 300, 96, A.pop(t, hd), '#FFFFFF'); big('KM AWAY?!', 540, 410, 130, A.pop(t, hd + 0.12), '#FFD15C', -0.04);
+      blit(); FX.speedLines(t, 1 - A.clamp((t - st - 0.1) / 0.6)); FX.orbs(t, { k: 0.8 }); big('HUNDREDS OF', 540, 300, 96, A.pop(t, hd), '#FFFFFF'); big('KM AWAY?!', 540, 410, 130, A.pop(t, hd + 0.12), '#FFD15C', -0.04);
     } });
     cue(st + 0.1, 'boing', { gain: 0.5 }); cue(Wd('hundreds', 0), 'pop', { gain: 0.6 }); cue(Wd('hundreds', 0) + 0.12, 'pop', { gain: 0.6 }); }
 
@@ -110,7 +110,7 @@ export function buildShots(E) {
       act(rivA, lerp(-5, -2.4, wa), 1.0, { mood: 'content', legs: 'walk', phase: t * 7, armR: [30, -60], holdR: P2.scroll });
       act(rivB, lerp(4.5, 2.2, wa), 0.4, { mood: 'happy', legs: 'walk', phase: t * 7 + 1, armL: [20, -40], holdL: P2.fan });
       shoot(COURT.scene, [rivA, rivB], mix(V3(0, 1.6, 12), V3(0, 7.5, 20), k), mix(V3(0, 2.6, 0), V3(0, 6, -14), k), { ...LK, fov: 46, aperture: 0 });
-      blit(); big('132 AD', 540, 330, 150, A.pop(t, st + 0.25), '#FFD15C'); big('CHINA', 540, 470, 90, A.pop(t, ch), '#FFFFFF');
+      blit(); FX.petals(t, { n: 30 }); big('132 AD', 540, 330, 150, A.pop(t, st + 0.25), '#FFD15C'); big('CHINA', 540, 470, 90, A.pop(t, ch), '#FFFFFF');
     } });
     cue(st, 'whoosh', { gain: 0.8 }); cue(st + 0.25, 'pop', { gain: 0.6 }); cue(Wd('china', 1), 'sparkle', { gain: 0.5 }); }
 
@@ -130,11 +130,11 @@ export function buildShots(E) {
   // ── S05 · "built a bronze jar nearly two meters wide." the jar rises into view; he measures it with his arms ──
   { const st = Wd('built', 2) - 0.05, tw = Wd('two', 2), wi = Wd('wide', 2);
     add({ id: 'S05', at: st, trans: 'whip', shafts: 0.9, shaftX: CW * 0.35, note: 'low crane rising up the glowing jar; Zhang Heng beside it spreads his arms, a width arrow snaps across "2 METERS"', draw(lt, d, t, blit) {
-      hideAll(); into(HALL.scene, zhang); J.update(t, { glow: 0.3 + 0.4 * A.pop(t, st + 0.2) });
+      hideAll(); into(HALL.scene, zhang); J.update(t, { glow: 0.3 + 0.4 * A.pop(t, st + 0.2) }); HALL.lanterns.forEach((l, i) => l.userData.light && (l.userData.light.intensity = 3 * A.flicker(t, i)));
       act(zhang, 1.35, 1.85, { ...A.face(t, [[0, 'excited'], [tw, 'proud'], [wi + 0.2, 'laugh']]), armL: A.keys(t, [[0, [30, 10]], [tw - 0.1, [100, 0]]]), armR: A.keys(t, [[0, [30, 10]], [tw - 0.1, [100, 0]]]), tilt: 4 });
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [zhang], mix(V3(0.5, 0.7, 8.0), V3(0.6, 2.6, 8.8), k), mix(V3(0.35, 1.0, 0.4), V3(0.4, 1.7, 0.4), k), { ...LK, fov: 48 });
-      blit(); const ak = A.pop(t, tw, 0.4); if (ak > 0) { const [lx, ly] = toScreen(V3(-0.98, 1.2, 0.95)), [rx, ry] = toScreen(V3(0.98, 1.2, 0.95)); const cx = (lx + rx) / 2, hw = (rx - lx) / 2 * Math.min(1, ak);
+      { const jc = toScreen(V3(0, 1.6, 0)); ctx.save(); blit(); ctx.restore(); FX.godray(jc[0], jc[1], t, { k: 0.8 * A.pop(t, st + 0.2, 0.6) }); FX.orbs(t, {}); } const ak = A.pop(t, tw, 0.4); if (ak > 0) { const [lx, ly] = toScreen(V3(-0.98, 1.2, 0.95)), [rx, ry] = toScreen(V3(0.98, 1.2, 0.95)); const cx = (lx + rx) / 2, hw = (rx - lx) / 2 * Math.min(1, ak);
         ctx.save(); ctx.strokeStyle = '#FFD15C'; ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx - hw, ly); ctx.lineTo(cx + hw, ry); ctx.stroke(); [-1, 1].forEach((s) => { ctx.beginPath(); ctx.moveTo(cx + s * hw, ly); ctx.lineTo(cx + s * (hw - 30), ly - 24); ctx.moveTo(cx + s * hw, ly); ctx.lineTo(cx + s * (hw - 30), ly + 24); ctx.stroke(); }); ctx.restore();
         big('~2 METERS', cx, ly - 90, 96, ak, '#FFFFFF'); }
     } });
@@ -181,7 +181,7 @@ export function buildShots(E) {
       hideAll(); J.update(t, { drop: 2, k: clamp(0.75 + (t - st) / 0.25 * 0.25), glow: 0.4 + A.pop(t, cl) });
       const q = J.toadAt[2](), qq = q.clone(); qq.y += 0.1;
       shoot(HALL.scene, [], q.clone().add(V3(0.9, 0.7, 1.4)).add(V3(0, 0, -0.3 * drift(clamp(lt / d)))), qq, { ...LK, fov: 38, bloom: 0.7 }, A.jolt(t, cl, 0.5, 0.05), t);
-      blit(); const [bx, by] = toScreen(q); burst(bx, by, t, clamp((t - cl) / 0.4)); burst(bx, by, t, clamp((t - cl - 0.15) / 0.4), '255,255,255');
+      blit(); const [bx, by] = toScreen(q); FX.speedLines(t, 1 - clamp((t - cl) / 0.5), bx, by); burst(bx, by, t, clamp((t - cl) / 0.4)); burst(bx, by, t, clamp((t - cl - 0.15) / 0.4), '255,255,255');
       big('CLANG!', 540, 420, 190, A.pop(t, cl), '#FFD15C', -0.1); big('RIGHT IN!', 540, 600, 90, A.pop(t, to), '#FFFFFF', 0.05);
     } });
     cue(Wd('clang', 6), 'ding', { gain: 1.0 }); cue(Wd('clang', 6), 'slam', { gain: 0.4 }); }
@@ -270,14 +270,15 @@ export function buildShots(E) {
   { const st = cut(12), ja = Wd('jar', 12), hu = Wd('hundreds', 12);
     add({ id: 'S16', at: st, trans: 'zoom', shafts: 1, shaftX: CW * 0.4, note: 'Zhang Heng beams beside the jar, the emperor laughs and claps him on the shoulder, rivals sulk; a long rising pull-back to the glowing jar in the great hall', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, zhang, emp, rivA, rivB); J.update(t, { drop: 6, k: 1, glow: 0.6 + 0.3 * Math.sin(t * 3) });
-      act(zhang, -0.7, 2.7, { ...A.face(t, [[0, 'proud'], [ja, 'excited'], [hu + 0.4, 'laugh']]), armL: A.keys(t, [[0, [30, 10]], [ja, [150, 20]]]), armR: A.keys(t, [[0, [20, 10]], [ja + 0.1, [60, -80]]]), hopY: A.hop(t, ja, 0.4, 0.2) });
+      act(zhang, -0.7, 2.7, { ...A.face(t, [[0, 'proud'], [ja, 'excited'], [hu + 0.4, 'laugh']]), armL: A.keys(t, [[0, [30, 10]], [ja, [150, 20]]]), armR: A.keys(t, [[0, [20, 10]], [ja + 0.1, [60, -80]]]), hopY: A.hop(t, ja, 0.4, 0.2), sq: A.squashHop(t, ja, 0.4) });
       act(emp, 0.45, 2.35, { ...A.face(t, [[0, 'happy'], [ja + 0.2, 'laugh']]), armL: A.keys(t, [[0, [20, 10]], [ja + 0.2, [80, 20]]]) });
       act(rivA, 1.15, 1.6, { ...A.face(t, [[0, 'shock'], [ja + 0.4, 'sad']]), sweat: 1 }); act(rivB, -1.25, 1.5, { ...A.face(t, [[0, 'gasp'], [ja + 0.5, 'worried']]), armR: [40, 80], holdR: P2.fan });
       const k = eio(clamp((lt - 0.6) / (d - 0.6)));
       shoot(HALL.scene, [zhang, emp, rivA, rivB], mix(V3(0.2, 1.8, 7.4), V3(0.4, 6.5, 15), k), mix(V3(0.1, 1.6, 2.2), V3(0, 2.2, -1), k), { ...LK, fov: lerp(42, 50, k), aperture: k > 0.1 ? 0 : 0.0007 });
-      blit(); big('132 AD', 540, 320, 110, A.pop(t, hu) , '#FFD15C'); big('EARTHQUAKE DETECTOR', 540, 430, 64, A.pop(t, hu + 0.15), '#FFFFFF');
+      blit(); { const jc = toScreen(V3(0, 1.6, 0)); FX.godray(jc[0], jc[1], t, { k: 0.6 }); } FX.petals(t, { n: 22 }); FX.orbs(t, {}); big('132 AD', 540, 320, 110, A.pop(t, hu) , '#FFD15C'); big('EARTHQUAKE DETECTOR', 540, 430, 64, A.pop(t, hu + 0.15), '#FFFFFF');
     } });
     cue(st, 'whoosh', { gain: 0.8 }); cue(Wd('jar', 12), 'sparkle', { gain: 0.6 }); cue(Wd('hundreds', 12), 'pop', { gain: 0.5 }); }
 
+  A.autoSwoosh(S, cue, CUES);
   return { shots: S, cues: CUES };
 }

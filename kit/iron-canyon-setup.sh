@@ -603,6 +603,8 @@ else echo "WARNING: Iron Canyon mixer (dry/quirk music + voice polish) not found
 for f in engine.js fx.js main.js toon.js act.js han.js beasts.js; do case $f in main.js) dst=src/main.js;; *) dst=src/core/$f;; esac
   curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/engine/$f" -o "/tmp/ic-$f" 2>/dev/null && grep -q . "/tmp/ic-$f" && cp "/tmp/ic-$f" "$dst" \
     || cp "$HOME/shorts-videos/kit/engine/$f" "$dst" 2>/dev/null || echo "WARNING: engine v3 file $f not found; the old flat look is used"; done
+curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/tools/voice.py" -o tools/voice.py 2>/dev/null && grep -q "blended voices" tools/voice.py \
+  || cp "$HOME/shorts-videos/kit/tools/voice.py" tools/voice.py 2>/dev/null || echo "WARNING: kit voice.py (blended voices) not found; use faceless-shorts voice.py with a single voice"
 mkdir -p examples
 for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
 # voice energizer (WORLD vocoder) for mix.py's "energize"
@@ -634,10 +636,13 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
   (y 1340). No colour highlight. Words keep their punctuation; a chunk ends at a comma or full stop.
 - Story shape: open on the craziest true fact ("they ate lunch 800 feet up, every day"), then explain the job step by
   step, one picture per clause, short reaction beats, end on a deadpan punchline.
-- Narration: an excited storyteller with a dry wit: `am_fenrir` x1.15 (lead 0.2, gap 0.1) plus `"energize": { "up": 1.5,
-  "expr": 1.4 }` (pitch +1.5 semitones and 40 % more pitch movement, timing unchanged). Write with energy: questions,
-  "Clang!", "But days later...", a few exclamation marks on the big beats. Music: `"epic"` (original 120 BPM pentatonic
-  adventure bed with big drums) for history and grand stories, `"dry"` for quiet ones; ~18-20 dB under the voice. Sounds: `whoosh` on cuts, wind on
+- Narration: an upbeat, trendy storyteller: `"voice": "am_fenrir:0.5+am_puck:0.25+am_eric:0.25"` x1.2 (lead 0.2, gap
+  0.1), made with the project's `tools/voice.py` (kit copy that blends voices). No "energize" (it sounds robotic).
+  Music: `"epic"` for history and grand stories, `"dry"` for quiet ones, `"quirk"` for silly ones; ~18-20 dB under.
+- **Audience: tweens and teens.** Simple words, short punchy sentences, "you" framing ("Imagine you..."), wonder and
+  drama. Keep the facts true but light: no full names of obscure people (say "an astronomer", "a scientist"), few dates
+  and numbers (one big one at most, said simply: "almost 2,000 years ago"), no jargon (say "earthquake detector", not
+  "seismoscope"). Every fact still checked and listed in script.json "sources". Sounds: `whoosh` on cuts, wind on
   height reveals, `clank` / `ding` on steel, `chug` for trains.
 - True stories only (railroad crews, bridge and dam builders, lineworkers, old jobs), checked against good sources and
   listed in `script.json` "sources". The look is inspired by a format; never copy another creator's script, shots or frames.
@@ -697,6 +702,11 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
   cool/warm contrast: warm key light and lanterns against indigo, violet and jade (floors, walls, fog, distant peaks);
   never let one warm colour fill the frame. `HN.majSky` gives 3-stop sunset skies with a glowing sun; `HN.peaks` misty
   mountains. Keep `bloomThreshold` at ~0.92 so white faces don't glow.
+- **Make it magnificent:** each film needs at least three "wow" frames: a god-ray reveal of the hero object
+  (`FX.godray`), a vast establishing shot (palace / canyon / city under a glowing sky with `HN.peaks` layers and
+  `FX.petals` or `FX.orbs` floating), and an impact with `FX.speedLines` + burst + camera jolt. Exaggerate scale (huge
+  objects next to tiny people), colour (sunset gold against violet and jade), and reactions (squash & stretch hops via
+  `A.squashHop`, eyes x1.3 on gasps). A swoosh sound plays on every camera move (`A.autoSwoosh`).
 - Han China kit (`core/han.js`): `court(E, { time })`, `jarHall(E)`, `westLand(E)`, `palace()`, `curvedRoof()`,
   `lantern()`, `banner()`, `plumTree()`, `jar()`; robes `robe: true, sleeves: true, trim`, hats `scholar`, `mian`,
   `official`, `headband`, `extra: ['longmustache', 'goatee']`; `Horse` cut-out in `core/beasts.js`. Example:

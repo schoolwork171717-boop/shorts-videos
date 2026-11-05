@@ -46,3 +46,27 @@ export const pop = (t, t0, dur = 0.35) => (t < t0 ? 0 : back(clamp((t - t0) / du
 export const jolt = (t, t0, dur = 0.45, amp = 1) => (t < t0 || t > t0 + dur ? 0 : Math.sin((t - t0) * 38) * amp * (1 - (t - t0) / dur));
 export const hop = (t, t0, dur = 0.4, h = 1) => (t < t0 || t > t0 + dur ? 0 : Math.sin(Math.PI * (t - t0) / dur) * h);
 export const beatsOf = (words, from, to) => words.filter((w) => w.start >= from && w.start < to).map((w) => w.start);
+
+/** swooshes on camera moves: call once at the end of buildShots. Every shot with trans 'zoom' / 'whip' (or swoosh: true)
+ *  gets a swoosh just before it starts, panning with the whip direction; o.moves = [t, ...] adds one per fast camera move
+ *  inside a shot (crane, orbit, push). Skips a time that already has a whoosh/swoosh within 0.25 s. */
+export function autoSwoosh(shots, cue, cues) {
+  const near = (t) => cues.some((c) => (c.type === 'whoosh' || c.type === 'swoosh') && Math.abs(c.t - t) < 0.25);
+  shots.forEach((o, i) => {
+    if (i > 0 && (o.trans === 'zoom' || o.trans === 'whip' || o.swoosh) && !near(o.at - 0.12)) cue(o.at - 0.12, 'swoosh', { gain: o.trans === 'whip' ? 0.9 : 0.75, sweep: o.trans === 'whip' ? -(o.whipDir ?? 1) * 0.8 : 0, dur: o.trans === 'whip' ? 0.42 : 0.55 });
+    (o.moves || []).forEach((t) => { if (!near(t)) cue(t, 'swoosh', { gain: 0.6, sweep: 0.5, dur: 0.6 }); });
+  });
+}
+
+/** body squash & stretch for a hop: returns sq (-1..1); put it in toon state as { sq } (act() maps it to mesh scale):
+ *  squash on take-off and landing, stretch in the air */
+export function squashHop(t, t0, dur = 0.4) {
+  if (t < t0 - 0.08 || t > t0 + dur + 0.15) return 0;
+  if (t < t0) return 0.6 * Math.sin(Math.PI * (t - t0 + 0.08) / 0.16);            // crouch before the jump
+  if (t < t0 + dur) return -0.5 * Math.sin(Math.PI * (t - t0) / dur);               // stretch in the air
+  return 0.7 * Math.sin(Math.PI * (t - t0 - dur) / 0.15);                           // land
+}
+/** apply a squash value to a Toon (feet stay planted): call after set() */
+export function applySquash(p, sq = 0) { p.mesh.scale.set(1 + sq * 0.14, 1 - sq * 0.14, 1); }
+/** a lantern flicker multiplier (0.85..1.1) */
+export const flicker = (t, seed = 0) => 1 + Math.sin(t * 13 + seed) * 0.05 + Math.sin(t * 7.3 + seed * 2) * 0.04 + Math.sin(t * 29 + seed * 5) * 0.02;
