@@ -635,8 +635,8 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
 - Bright midday sun on red rock; violet haze below; pink sunset for endings and flashbacks.
 - **Captions (v6):** rounded heavy white words (Nunito Black, `fonts/Nunito-Black.woff2`, OFL) with a slim dark edge and a
   soft blurred drop shadow, at y 1420 (lower-middle, clear of YouTube's bottom overlay), 1-3 words, springy pop-in.
-- **60 fps:** render with `FPS=60` (smoother motion; about 5 s per 2-second segment of work... budget ~100 min per 40 s
-  Short in 2-second segments of ~5 minutes each).
+- **60 fps:** render with `FPS=60` for smoother motion, in 2-second segments (~5 minutes each); budget ~100 minutes of
+  rendering per 40 s Short.
 - **Camera never still:** `shoot()` adds a slow operator float, a breathing zoom and a whisper of roll to every shot
   (`look.float = 0` turns it off for locked-off frames). Frame closer: head-and-torso most of the time.
 - **Contrast & values:** warm light pools (lamps, windows, sunsets) against deep teal-navy shadows; the grade default is
