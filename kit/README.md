@@ -2,7 +2,8 @@
 
 After building the Iron Canyon style and creating a project, copy these over the project:
 
-- `kit/mix.py` → `<project>/tools/mix.py` — music beds, all original: `"dry"` (DEFAULT: the deadpan documentary bed —
+- `kit/mix.py` → `<project>/tools/mix.py` — music beds, all original: `"bright"` (DEFAULT since v6: playful 116 BPM stereo
+  bed with pizzicato, mallet, flute and reverb), `"epic"`, `"dry"` (the deadpan documentary bed —
   140 BPM half-time, D minor, sparse muted plucks, low sine root, wooden offbeat tick, a glassy bell every other bar)
   at -14 dB with ducking, about 20 dB under the voice; `"quirk"` (swung pizzicato + marimba, -9 dB); `"bed"`,
   `"tension"`, `"bounce"`. Plus `voice_polish` (rumble cut, presence, gentle compression) on the narration.
@@ -14,12 +15,12 @@ script.json defaults for every new Short:
 { "voice": "am_fenrir:0.4+am_eric:0.4+am_puck:0.2", "speed": 1.3, "lead": 0.12, "gap": 0.04, "outro": 0.6, "music": "bright" }
 ```
 
-The voice is a natural blend of three Kokoro voices (the deadpan narrator, the younger Puck, the brighter Eric) at 1.2x:
+The voice is a natural blend of three Kokoro voices (the deadpan narrator, the brighter Eric, the younger Puck) at 1.3x:
 upbeat and trendy, with NO audio processing (the old WORLD "energize" step made it sound robotic; leave it off).
 Generate it with the kit copy of voice.py, which understands blends:
 `~/.faceless-shorts/venv/bin/python tools/voice.py .` (setup copies it into the project's tools/), then words.py as usual.
 Write for tweens and teens: short punchy sentences, "you" framing, wonder and drama, a few exclamation marks.
-Music "epic" for grand stories, "dry" for quiet ones, "quirk" for silly ones.
+Music "bright" by default, "epic" for grand stories, "dry" for quiet ones, "quirk" for silly ones.
 
 ## Animation, not cuts
 Viewers notice when a Short is a slideshow. Every shot is a little scene where something happens on camera:
