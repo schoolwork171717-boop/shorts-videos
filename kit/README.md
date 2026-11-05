@@ -12,10 +12,18 @@ After building the Iron Canyon style and creating a project, copy these over the
 script.json defaults for every new Short:
 
 ```json
-{ "voice": "am_fenrir:0.4+am_eric:0.4+am_puck:0.2", "speed": 1.3, "lead": 0.12, "gap": 0.04, "outro": 0.6, "music": "bright" }
+{ "voice": "clone", "speed": 1.12, "lead": 0.12, "gap": 0.04, "outro": 0.6, "music": "bright" }
 ```
 
-The voice is a natural blend of three Kokoro voices (the deadpan narrator, the brighter Eric, the younger Puck) at 1.3x:
+**v7 voice (the user's own narrator, cloned):** make the narration with
+`~/.faceless-shorts/venv/bin/python tools/clone_voice.py .` (not voice.py), then words.py as usual. It speaks every
+line in the voice of `voice/narrator.wav` (a clip of the narrator from the user's reference video; setup copies it to
+`~/.faceless-shorts/voice/`) with Kyutai Pocket TTS through sherpa-onnx, makes each line ~5 times and keeps the take
+where Whisper hears every word and the voice is closest to the reference (pitch ~190 Hz, ~3.6 words/s). Models come
+from the sherpa-onnx GitHub releases on first use (~350 MB, works in cloud runs). If a line prints "WARNING: best take
+only matched", reword that line slightly and run again. The Kokoro blend below is only the fallback.
+
+Fallback voice (only if cloning can't run): a natural blend of three Kokoro voices (the deadpan narrator, the brighter Eric, the younger Puck) at 1.3x:
 upbeat and trendy, with NO audio processing (the old WORLD "energize" step made it sound robotic; leave it off).
 Generate it with the kit copy of voice.py, which understands blends:
 `~/.faceless-shorts/venv/bin/python tools/voice.py .` (setup copies it into the project's tools/), then words.py as usual.
@@ -83,3 +91,8 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
   Thu 5 & 6 PM, Fri 2 & 4 PM, Sat 9 AM & 5 PM, Sun 5 & 6 PM.
 - Hashtags: 4-5 specific ones in the description: #shorts + 2 topic tags + 1-2 audience tags (#didyouknow, #history,
   #science, #facts...), never more than 15; 6-8 specific keyword tags.
+
+## v7 (the user's narrator voice)
+- Voice: `"voice": "clone"`, speed 1.12, via `tools/clone_voice.py` + `voice/narrator.wav` (speaker similarity ~0.85-0.9
+  to the reference vs 0.70 for the old Kokoro blend; pitch ~190 Hz; pace ~3.6 words/s like the reference).
+- Cloning model: Kyutai Pocket TTS (CC-BY 4.0 per its license file), WeSpeaker + Whisper base.en for take selection.

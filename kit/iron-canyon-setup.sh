@@ -606,6 +606,12 @@ for f in engine.js fx.js main.js toon.js act.js han.js beasts.js captions.js ind
 curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/tools/voice.py" -o tools/voice.py 2>/dev/null && grep -q "blended voices" tools/voice.py \
   || cp "$HOME/shorts-videos/kit/tools/voice.py" tools/voice.py 2>/dev/null || echo "WARNING: kit voice.py (blended voices) not found; use faceless-shorts voice.py with a single voice"
 curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/fonts/Nunito-Black.woff2" -o fonts/Nunito-Black.woff2 2>/dev/null || cp "$HOME/shorts-videos/kit/fonts/Nunito-Black.woff2" fonts/ 2>/dev/null || echo "WARNING: Nunito font missing; captions fall back to Inter"
+# v7 narrator: cloned from the user's reference video (Pocket TTS via sherpa-onnx; models from GitHub releases)
+R=https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit
+curl -fsSL "$R/tools/clone_voice.py" -o tools/clone_voice.py 2>/dev/null && grep -q "Pocket TTS" tools/clone_voice.py \
+  || cp "$HOME/shorts-videos/kit/tools/clone_voice.py" tools/clone_voice.py 2>/dev/null || echo "WARNING: clone_voice.py not found; fall back to tools/voice.py"
+mkdir -p "$HOME/.faceless-shorts/voice"
+curl -fsSL "$R/voice/narrator.wav" -o "$HOME/.faceless-shorts/voice/narrator.wav" 2>/dev/null || cp "$HOME/shorts-videos/kit/voice/narrator.wav" "$HOME/.faceless-shorts/voice/" 2>/dev/null || echo "WARNING: voice/narrator.wav (reference clip) not found"
 mkdir -p examples
 for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
 # voice energizer (WORLD vocoder) for mix.py's "energize"
@@ -613,6 +619,10 @@ PYV="$HOME/.faceless-shorts/venv/bin/python"
 if [ -x "$PYV" ] && ! "$PYV" -c "import pyworld" 2>/dev/null; then
   (command -v uv >/dev/null && uv pip install --python "$PYV" -q pyworld "setuptools<70") || "$PYV" -m pip install -q pyworld "setuptools<70" 2>/dev/null || echo "WARNING: pyworld not installed; the voice will not be energized"
 fi
+if [ -x "$PYV" ] && ! "$PYV" -c "import sherpa_onnx, num2words" 2>/dev/null; then
+  (command -v uv >/dev/null && uv pip install --python "$PYV" -q sherpa-onnx num2words) || "$PYV" -m pip install -q sherpa-onnx num2words 2>/dev/null || echo "WARNING: sherpa-onnx not installed; the cloned narrator needs it"
+fi
+[ -x "$PYV" ] && "$PYV" -c "import sys; sys.argv=['x']; sys.path.insert(0,'tools'); import clone_voice as c; c.ensure_models()" 2>/dev/null || echo "WARNING: narrator models not downloaded yet (clone_voice.py downloads them on first use)"
 cat > '../STYLE.md' <<'IC_FILE_EOF'
 # Iron Canyon 3D: wild true work stories, 9:16
 
@@ -646,10 +656,12 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
   (y 1340). No colour highlight. Words keep their punctuation; a chunk ends at a comma or full stop.
 - Story shape: open on the craziest true fact ("they ate lunch 800 feet up, every day"), then explain the job step by
   step, one picture per clause, short reaction beats, end on a deadpan punchline.
-- Narration: a fast, upbeat, trendy storyteller matched to the user's reference (male, ~135-140 Hz, ~5.5 syllables/s,
-  almost no gaps): `"voice": "am_fenrir:0.4+am_eric:0.4+am_puck:0.2"`, `"speed": 1.3`, `"gap": 0.04`, `"lead": 0.12`,
-  made with the project's `tools/voice.py` (kit copy that blends voices). No "energize" (it sounds robotic). The mixer
-  puts the voice at -17.5 dB RMS (`"voice_db"`), a touch louder than before; mixes land around -13 LUFS.
+- Narration (v7): THE voice is the user's reference narrator, cloned. `"voice": "clone"`, `"speed": 1.12`, `"gap": 0.04`,
+  `"lead": 0.12`, made with the project's `tools/clone_voice.py` (Kyutai Pocket TTS via sherpa-onnx, reference clip
+  `~/.faceless-shorts/voice/narrator.wav`, ~190 Hz, ~3.6 words/s, almost no gaps). Each line is made several times and
+  the take with every word right (Whisper check) that sounds most like the reference wins. No audio effects on the
+  voice. Fallback only if cloning is impossible: tools/voice.py with "am_fenrir:0.4+am_eric:0.4+am_puck:0.2" @1.3.
+  The mixer puts the voice at -17.5 dB RMS (`"voice_db"`); mixes land around -11 to -13 LUFS.
 - Music: `"bright"` (default: original warm, playful 116 BPM bed: round bass, pizzicato, mallets, whistle-flute motifs,
   soft drums, stereo hall reverb, humanised) ; `"epic"` for battles and grand history, `"dry"` for quiet ones. Never use
   or alter another creator's track (Content ID matches it anyway).
