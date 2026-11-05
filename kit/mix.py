@@ -8,6 +8,7 @@ and script.json "music": "bed" (the procedural score, default) · "none" · "aud
 track, any format ffmpeg reads). The music ducks under the voice.
 
 Sound rules (STYLE.md): every effect is soft and rounded, nothing above ~5 kHz, no ticks / hats / glitches / beeps.
+Music: bed tension bounce quirk dry.
 Cue types: whoosh slide pop plop gulp boing bubbles sizzle sparkle thud slam tock zip alarm  (+ gain, dur)
 """
 import json, subprocess, sys
@@ -201,6 +202,32 @@ def music_quirk():
     fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.15 * SR); fade[:fi] *= np.linspace(0, 1, fi)
     return x / (np.abs(x).max() + 1e-9) * fade
 
+def music_dry():
+    """dry, curious documentary bed (script.json "music": "dry"): sparse muted plucks in D minor over a slow half-time
+    pulse, a soft glassy bell answering every other bar, a quiet wooden tick. 70 BPM feel, original."""
+    bpm = 140; beat = 60 / bpm; bar = beat * 4; x = np.zeros(N); rs = np.random.default_rng(11)
+    Dm, Bb, F, C, Gm, A7 = [73.4, 87.3, 110.0], [58.3, 73.4, 87.3], [87.3, 110.0, 130.8], [65.4, 82.4, 98.0], [98.0, 116.5, 146.8], [110.0, 138.6, 164.8]
+    prog = [Dm, Dm, Bb, Bb, F, C, Gm, A7]
+    def put(i, y):
+        if i < 0 or i >= N: return
+        n = min(len(y), N - i); x[i:i + n] += y[:n]
+    pluck = lambda f, g, d=0.28: lp((np.sin(2 * np.pi * f * tt(d)) + 0.35 * np.sin(4 * np.pi * f * tt(d))) * env(int(d * SR), 0.002, 16), 2600) * g
+    bell = lambda f, g: (np.sin(2 * np.pi * f * tt(1.2)) + 0.25 * np.sin(2 * np.pi * f * 2.76 * tt(1.2)) * np.exp(-tt(1.2) * 6)) * env(int(1.2 * SR), 0.004, 3.2) * g
+    tick = lambda g: bp(noise(0.03), 1800, 4200) * env(int(0.03 * SR), 0.0005, 60) * g
+    low = lambda f, g: np.sin(2 * np.pi * f * tt(0.6)) * env(int(0.6 * SR), 0.01, 5) * g
+    nb = int(DUR / bar) + 2
+    for b in range(nb):
+        ch = prog[b % 8]; b0 = b * bar
+        put(int(b0 * SR), low(ch[0], 0.30)); put(int((b0 + 2 * beat) * SR), low(ch[0] * 1.5, 0.16))
+        pat = rs.choice([[0, -1, 2, 1, -1, 2, -1, 1], [0, 2, -1, 1, 2, -1, -1, -1], [-1, 1, 0, -1, 2, -1, 1, -1], [0, -1, -1, 2, -1, 1, 0, -1]])
+        for k, n_ in enumerate(pat):
+            if n_ >= 0: put(int((b0 + k * beat / 2) * SR), pluck(ch[n_] * 2, 0.20 if k % 2 == 0 else 0.13))
+        for k in range(4): put(int((b0 + k * beat + beat / 2) * SR), tick(0.05))
+        if b % 2 == 1: put(int((b0 + 2.5 * beat) * SR), bell(ch[1] * 8, 0.07))
+    x = lp(x, 6000); x = hp(x, 40)
+    fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.15 * SR); fade[:fi] *= np.linspace(0, 1, fi)
+    return x / (np.abs(x).max() + 1e-9) * fade
+
 def voice_polish(v):
     """make the AI voice sit closer and more natural: rumble cut, a touch of presence, gentle compression"""
     out = np.zeros_like(v)
@@ -229,13 +256,13 @@ if vf.exists():
 # music
 mus = script.get('music', 'bed')
 if mus and mus != 'none':
-    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else None
+    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else None
     if m is None:
         a = load_audio(P / mus)[:N]; m = np.zeros(N); m[:len(a)] = a.mean(1); m /= np.abs(m).max() + 1e-9
-    m = np.stack([m, m], 1) * db((-9 if mus == 'quirk' else -24) if voice is not None else -20)
+    m = np.stack([m, m], 1) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -24) if voice is not None else -20)
     if voice is not None:                                                        # duck under the voice
         lev = np.abs(voice.mean(1)); lev = signal.lfilter([1 - 0.9995], [1, -0.9995], lev); lev /= lev.max() + 1e-9
-        m *= (1 - (0.4 if mus == 'quirk' else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
+        m *= (1 - (0.4 if mus in ('quirk', 'dry') else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
     mix += m
 # effects
 for c in cj['cues']:
