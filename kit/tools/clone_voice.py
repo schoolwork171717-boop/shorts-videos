@@ -105,23 +105,32 @@ def main():
 
     def take(text):
         best = None
-        for k in range(tries + 4):
+        for k in range(tries + 6):
             g = so.GenerationConfig(); g.reference_audio = ref24.tolist(); g.reference_sample_rate = SR; g.speed = speed
             # Pocket TTS tends to swallow a line's first word; a leading "..." usually fixes it (alternate both ways)
             y = trim(np.asarray(tts.generate(('... ' + text) if k % 2 == 0 else text, g).samples, dtype=np.float32))
             m, sim, semi, heard = score(text, y)
-            q = (1.0 if m >= 0.95 else m - 0.5) * 3 + sim - 0.05 * semi
+            q = (1.0 if m >= 0.99 else m - 0.6) * 3 + sim - 0.04 * semi
             print(f'   take {k + 1}: words {m:.2f} voice {sim:.3f} pitch {semi:.1f}st  "{heard}"', flush=True)
             if best is None or q > best[0]: best = (q, y, m)
-            if k + 1 >= tries and best[2] >= 0.95: break
-        if best[2] < 0.95: print(f'   WARNING: best take only matched {best[2]:.0%} of the words', flush=True)
+            if k + 1 >= tries and best[2] >= 0.99: break
+        if best[2] < 0.99: print(f'   WARNING: best take only matched {best[2]:.0%} of the words', flush=True)
         y = best[1]; return y / (np.sqrt(np.mean(y ** 2)) + 1e-9) * 0.08          # even loudness line to line
 
     out = [np.zeros(int(S.get('lead', 0.12) * SR))]; t = len(out[0]) / SR; lines = []
     t0 = time.time()
+    # each line's chosen take is kept in data/clone/ so a re-run only remakes lines that changed or that you list:
+    #   clone_voice.py <project> --redo 6,8,10
+    redo = set()
+    if '--redo' in sys.argv: redo = {int(v) for v in sys.argv[sys.argv.index('--redo') + 1].split(',') if v.strip()}
+    CD = P / 'data/clone'; CD.mkdir(parents=True, exist_ok=True)
     for i, ln in enumerate(S['lines']):
         print(f'{i:2d} {ln["text"]}', flush=True)
-        x = take(ln['text'])
+        cw, ct = CD / f'line{i:02d}.wav', CD / f'line{i:02d}.txt'
+        if i not in redo and cw.exists() and ct.exists() and ct.read_text() == ln['text']:
+            x = load(str(cw), SR).astype(np.float64); print('   (kept)', flush=True)
+        else:
+            x = take(ln['text']); wf.write(cw, SR, (np.clip(x, -1, 1) * 32767).astype(np.int16)); ct.write_text(ln['text'])
         lines.append({'i': i, 'text': ln['text'], 'start': round(t, 3), 'end': round(t + len(x) / SR, 3)})
         gap = np.zeros(int(float(ln.get('gap', S.get('gap', 0.04))) * SR))
         out += [x, gap]; t += (len(x) + len(gap)) / SR

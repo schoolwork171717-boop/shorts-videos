@@ -112,7 +112,7 @@ export function drawToon(g, look = {}, st = {}) {
       g.lineWidth = 14;
     }
     if (hold) { g.save(); hold(g, hx, hy, side * (a + e) * R2D, side); g.restore(); }
-    g.fillStyle = INK; g.beginPath(); g.ellipse(hx, hy, 15, 17, 0, 0, Math.PI * 2); g.fill();
+    if (L.gloves) { g.fillStyle = L.gloves === true ? '#FFFFFF' : L.gloves; g.strokeStyle = INK; g.lineWidth = 5; g.beginPath(); g.ellipse(hx, hy, 21, 23, 0, 0, Math.PI * 2); g.fill(); g.stroke(); g.lineWidth = 14; } else { g.fillStyle = INK; g.beginPath(); g.ellipse(hx, hy, 15, 17, 0, 0, Math.PI * 2); g.fill(); }
     hands[side < 0 ? 'L' : 'R'] = [hx, hy];
   };
   arm(-1, S.armL, S.holdL); arm(1, S.armR, S.holdR);

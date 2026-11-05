@@ -1,0 +1,56 @@
+{
+  "title": "Tokyo Hired People to Shove You Onto Trains #shorts",
+  "voice": "clone",
+  "speed": 1.12,
+  "tries": 5,
+  "lead": 0.12,
+  "gap": 0.04,
+  "outro": 0.6,
+  "music": "bright",
+  "lines": [
+    {
+      "text": "What if your job was shoving people onto a train?"
+    },
+    {
+      "text": "In Tokyo, that job is real!"
+    },
+    {
+      "text": "When rush hour got crazy,"
+    },
+    {
+      "text": "trains carried more than twice the people they were built for."
+    },
+    {
+      "text": "The doors couldn't even close!"
+    },
+    {
+      "text": "So stations hired pushers."
+    },
+    {
+      "text": "Mostly students, in neat uniforms and bright white gloves."
+    },
+    {
+      "text": "They pushed backs, shoulders and bags, until everyone fit."
+    },
+    {
+      "text": "Then the doors closed, and the train left right on time."
+    },
+    {
+      "text": "But here's the twist."
+    },
+    {
+      "text": "Japan didn't invent this job."
+    },
+    {
+      "text": "Long before Tokyo, New York subway guards shoved crowds onto trains too!"
+    },
+    {
+      "text": "So next time your train feels packed, just be glad nobody's paid to push you."
+    }
+  ],
+  "sources": [
+    "Wikipedia, 'Passenger pusher': first brought in at Shinjuku Station as 'passenger arrangement staff', largely part-time students; 1964 LIFE described 'white-gloved official pushers'; in 1975 rush-hour trains averaged 221% of designed capacity; still used on some of the most crowded Tokyo lines",
+    "Wikipedia, 'Passenger pusher' (New York): a 1918 New York Times article describes subway guards and police pushing crowds onto trains on the 42nd Street Shuttle; by the 1920s subway pushers were known as 'sardine packers'",
+    "JRPass blog, 'Oshiya: The True Story of Japan's Train Pushers' (busiest from the 1960s to the 1980s; part-time students at the busiest stations)"
+  ]
+}
