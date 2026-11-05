@@ -600,11 +600,12 @@ MIXURL=https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/mai
 if curl -fsSL "$MIXURL" -o /tmp/ic-mix.py 2>/dev/null && grep -q music_dry /tmp/ic-mix.py; then cp /tmp/ic-mix.py tools/mix.py
 elif [ -f "$HOME/shorts-videos/kit/mix.py" ]; then cp "$HOME/shorts-videos/kit/mix.py" tools/mix.py
 else echo "WARNING: Iron Canyon mixer (dry/quirk music + voice polish) not found; using the default mixer"; fi
-for f in engine.js fx.js main.js toon.js act.js han.js beasts.js; do case $f in main.js) dst=src/main.js;; *) dst=src/core/$f;; esac
+for f in engine.js fx.js main.js toon.js act.js han.js beasts.js captions.js index.html; do case $f in main.js) dst=src/main.js;; index.html) dst=index.html;; *) dst=src/core/$f;; esac
   curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/engine/$f" -o "/tmp/ic-$f" 2>/dev/null && grep -q . "/tmp/ic-$f" && cp "/tmp/ic-$f" "$dst" \
     || cp "$HOME/shorts-videos/kit/engine/$f" "$dst" 2>/dev/null || echo "WARNING: engine v3 file $f not found; the old flat look is used"; done
 curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/tools/voice.py" -o tools/voice.py 2>/dev/null && grep -q "blended voices" tools/voice.py \
   || cp "$HOME/shorts-videos/kit/tools/voice.py" tools/voice.py 2>/dev/null || echo "WARNING: kit voice.py (blended voices) not found; use faceless-shorts voice.py with a single voice"
+curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/fonts/Nunito-Black.woff2" -o fonts/Nunito-Black.woff2 2>/dev/null || cp "$HOME/shorts-videos/kit/fonts/Nunito-Black.woff2" fonts/ 2>/dev/null || echo "WARNING: Nunito font missing; captions fall back to Inter"
 mkdir -p examples
 for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
 # voice energizer (WORLD vocoder) for mix.py's "energize"
@@ -632,13 +633,26 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
 - Camera always moves: push-ins along ledges, pans along the beam, crane-downs, orbits, tracking walkers. A new shot
   every 2.5-7 s, and each shot is a little scene where someone does something (see 1e).
 - Bright midday sun on red rock; violet haze below; pink sunset for endings and flashbacks.
-- **Captions:** 1-3 words at a time ("on the job."), white Inter Black, thick black edge, soft shadow, lower centre
+- **Captions (v6):** rounded heavy white words (Nunito Black, `fonts/Nunito-Black.woff2`, OFL) with a slim dark edge and a
+  soft blurred drop shadow, at y 1420 (lower-middle, clear of YouTube's bottom overlay), 1-3 words, springy pop-in.
+- **60 fps:** render with `FPS=60` (smoother motion; about 5 s per 2-second segment of work... budget ~100 min per 40 s
+  Short in 2-second segments of ~5 minutes each).
+- **Camera never still:** `shoot()` adds a slow operator float, a breathing zoom and a whisper of roll to every shot
+  (`look.float = 0` turns it off for locked-off frames). Frame closer: head-and-torso most of the time.
+- **Contrast & values:** warm light pools (lamps, windows, sunsets) against deep teal-navy shadows; the grade default is
+  `con 0.32, split 0.5, shadow #1E4A6E, high #FFC878, vignette 0.32`.
+- **Arms:** `A.arm(t, keys)`: elbow follows the shoulder 70 ms later (overlapping action) with a gentle constant sway.
+- Old caption rule (kept for reference): 1-3 words at a time ("on the job."), white Inter Black, thick black edge, soft shadow, lower centre
   (y 1340). No colour highlight. Words keep their punctuation; a chunk ends at a comma or full stop.
 - Story shape: open on the craziest true fact ("they ate lunch 800 feet up, every day"), then explain the job step by
   step, one picture per clause, short reaction beats, end on a deadpan punchline.
-- Narration: an upbeat, trendy storyteller: `"voice": "am_fenrir:0.5+am_puck:0.25+am_eric:0.25"` x1.2 (lead 0.2, gap
-  0.1), made with the project's `tools/voice.py` (kit copy that blends voices). No "energize" (it sounds robotic).
-  Music: `"epic"` for history and grand stories, `"dry"` for quiet ones, `"quirk"` for silly ones; ~18-20 dB under.
+- Narration: a fast, upbeat, trendy storyteller matched to the user's reference (male, ~135-140 Hz, ~5.5 syllables/s,
+  almost no gaps): `"voice": "am_fenrir:0.4+am_eric:0.4+am_puck:0.2"`, `"speed": 1.3`, `"gap": 0.04`, `"lead": 0.12`,
+  made with the project's `tools/voice.py` (kit copy that blends voices). No "energize" (it sounds robotic). The mixer
+  puts the voice at -17.5 dB RMS (`"voice_db"`), a touch louder than before; mixes land around -13 LUFS.
+- Music: `"bright"` (default: original warm, playful 116 BPM bed: round bass, pizzicato, mallets, whistle-flute motifs,
+  soft drums, stereo hall reverb, humanised) ; `"epic"` for battles and grand history, `"dry"` for quiet ones. Never use
+  or alter another creator's track (Content ID matches it anyway).
 - **Audience: tweens and teens.** Simple words, short punchy sentences, "you" framing ("Imagine you..."), wonder and
   drama. Keep the facts true but light: no full names of obscure people (say "an astronomer", "a scientist"), few dates
   and numbers (one big one at most, said simply: "almost 2,000 years ago"), no jargon (say "earthquake detector", not

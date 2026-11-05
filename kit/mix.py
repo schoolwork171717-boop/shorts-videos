@@ -8,7 +8,7 @@ and script.json "music": "bed" (the procedural score, default) · "none" · "aud
 track, any format ffmpeg reads). The music ducks under the voice.
 
 Sound rules (STYLE.md): every effect is soft and rounded, nothing above ~5 kHz, no ticks / hats / glitches / beeps.
-Music: bed tension bounce quirk dry epic.  Voice: script.json "energize": {"up": 1.5, "expr": 1.4} (needs pyworld).
+Music: bed tension bounce quirk dry epic bright (default for tweens/teens).  Voice: script.json "energize": {"up": 1.5, "expr": 1.4} (needs pyworld).
 Cue types: swoosh (camera moves; + sweep: -1..1 pan glide) whoosh slide pop plop gulp boing bubbles sizzle sparkle thud slam tock zip alarm  (+ gain, dur)
 """
 import json, subprocess, sys
@@ -280,6 +280,69 @@ def music_epic():
     fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.1 * SR); fade[:fi] *= np.linspace(0, 1, fi)
     return x / (np.abs(x).max() + 1e-9) * fade
 
+def _reverb(st, decay=1.6, wet=0.22, seed=3):
+    """stereo hall reverb: convolve with two decorrelated exponentially decaying noise tails (FFT)"""
+    r = np.random.default_rng(seed); n = int(decay * SR); t_ = np.arange(n) / SR
+    out = st.copy()
+    for c in range(2):
+        ir = r.standard_normal(n) * np.exp(-t_ * 6.9 / decay); ir = lp(ir, 6500); ir[:int(0.012 * SR)] = 0; ir /= np.sqrt((ir ** 2).sum()) + 1e-9
+        out[:, c] = st[:, c] + wet * signal.fftconvolve(st[:, c], ir)[:len(st)]
+    return out
+
+def music_bright():
+    """warm, playful adventure bed for tweens and teens (script.json "music": "bright"), original: 116 BPM, warm round
+    bass with a sub layer, plucked pizzicato strings and a mallet answering in stereo, a soft whistle-flute lead that
+    plays a new 2-bar motif every phrase, soft kick + snap + shaker, everything slightly humanised, stereo hall reverb."""
+    bpm = 116; beat = 60 / bpm; bar = beat * 4; L_ = np.zeros(N); R_ = np.zeros(N); rs = np.random.default_rng(23)
+    C, Am, F, G, Em, Dm = [130.8, 164.8, 196.0], [110.0, 130.8, 164.8], [87.3, 110.0, 130.8], [98.0, 123.5, 146.8], [82.4, 98.0, 123.5], [73.4, 87.3, 110.0]
+    prog = [C, G, Am, F, C, G, F, G]
+    scale = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3]                 # C major pentatonic-ish (no 4th / 7th)
+    def put(i, y, pan=0.0):
+        if i < 0 or i >= N: return
+        n = min(len(y), N - i); L_[i:i + n] += y[:n] * (1 - max(0, pan)); R_[i:i + n] += y[:n] * (1 + min(0, pan))
+    hum = lambda: rs.normal(0, 0.008)                                               # ±8 ms timing feel
+    vel = lambda g: g * rs.uniform(0.85, 1.05)
+    def bass(f, d):
+        t_ = tt(d); y = np.sin(2 * np.pi * f * t_) + 0.35 * np.sin(4 * np.pi * f * t_) + 0.5 * np.sin(np.pi * f * t_)
+        return lp(y, 900) * env(len(t_), 0.006, 3.5)
+    def pizz(f, g):
+        d = 0.32; t_ = tt(d); y = (np.sin(2 * np.pi * f * t_) + 0.45 * np.sin(4 * np.pi * f * t_) + 0.2 * np.sin(6 * np.pi * f * t_)) * np.exp(-t_ * 14)
+        return lp(y, 3500) * g
+    def mallet(f, g):
+        d = 0.6; t_ = tt(d); y = np.sin(2 * np.pi * f * t_) * np.exp(-t_ * 7) + 0.25 * np.sin(2 * np.pi * f * 4 * t_) * np.exp(-t_ * 30)
+        return y * g
+    def flute(f, d, g):
+        t_ = tt(d); vib = 1 + 0.006 * np.sin(2 * np.pi * 5.2 * t_) * np.minimum(1, t_ / 0.2)
+        ph = 2 * np.pi * f * np.cumsum(vib) / SR; y = np.sin(ph) + 0.12 * np.sin(2 * ph) + lp(noise(d), 3000) * 0.04
+        a = np.minimum(1, t_ / 0.04) * np.minimum(1, (d - t_) / 0.06); return y * a * g
+    kick = lambda g: np.sin(2 * np.pi * (48 + 90 * np.exp(-tt(0.22) * 28)) * tt(0.22)) * env(int(0.22 * SR), 0.001, 10) * g
+    snap = lambda g: (bp(noise(0.12), 1500, 5000) * env(int(0.12 * SR), 0.001, 26) + np.sin(2 * np.pi * 190 * tt(0.12)) * env(int(0.12 * SR), 0.001, 30) * 0.4) * g
+    shk = lambda g: hp(noise(0.06), 5500) * env(int(0.06 * SR), 0.004, 32) * g
+    nb = int(DUR / bar) + 2; motif = None
+    for b in range(nb):
+        ch = prog[b % 8]; b0 = b * bar
+        put(int((b0 + hum()) * SR), bass(ch[0], beat * 1.5) * vel(0.42)); put(int((b0 + 1.5 * beat + hum()) * SR), bass(ch[0], beat * 0.5) * vel(0.3)); put(int((b0 + 2 * beat + hum()) * SR), bass(ch[2] / 2, beat * 1.5) * vel(0.36))
+        for k in (0, 2): put(int((b0 + k * beat) * SR), kick(vel(0.32)))
+        put(int((b0 + 2.5 * beat) * SR), kick(0.18))
+        for k in (1, 3): put(int((b0 + k * beat + hum()) * SR), snap(vel(0.18)), 0.15)
+        for k in range(8): put(int((b0 + k * beat / 2 + hum()) * SR), shk(vel(0.06 if k % 2 else 0.035)), -0.3)
+        for k in range(8):                                                           # pizzicato 8ths walking the chord
+            f = [ch[0], ch[1], ch[2], ch[1], ch[0] * 2, ch[2], ch[1], ch[2]][k] * 2
+            put(int((b0 + k * beat / 2 + hum()) * SR), pizz(f, vel(0.16 if k % 2 == 0 else 0.11)), -0.45)
+        if b % 2 == 1:
+            for k, n_ in enumerate([2, 1, 0]): put(int((b0 + (2.5 + k * 0.5) * beat + hum()) * SR), mallet(ch[n_] * 4, vel(0.10)), 0.5)
+        if b % 2 == 0:                                                               # a new 2-bar flute motif every 4 bars
+            if b % 4 == 0 or motif is None:
+                motif = [(rs.integers(0, 8), rs.choice([0.5, 0.5, 1.0, 1.5])) for _ in range(6)]
+            tk = b0 + beat * 0.5
+            for n_, d in motif:
+                if tk > b0 + bar * 2 - 0.2: break
+                put(int((tk + hum()) * SR), flute(scale[n_], d * beat * 0.9, vel(0.11)), 0.1); tk += d * beat
+    st = np.stack([L_, R_], 1); st[:, 0] = hp(lp(st[:, 0], 9000), 32); st[:, 1] = hp(lp(st[:, 1], 9000), 32)
+    st = _reverb(st, 1.8, 0.28)
+    fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.08 * SR); fade[:fi] *= np.linspace(0, 1, fi)
+    return st / (np.abs(st).max() + 1e-9) * fade[:, None]
+
 def energize(v, sr_, up=1.5, expr=1.4):
     """livelier narration without changing timing (script.json "energize": {"up": semitones, "expr": factor}): WORLD
     vocoder raises the pitch a little and widens its movement around a slow baseline. Needs pyworld; skipped if missing."""
@@ -325,18 +388,18 @@ if vf.exists():
     v = load_audio(vf)[:N]; voice = np.zeros((N, 2)); voice[:len(v)] = v
     if script.get('energize'): voice = energize(voice, SR, **script['energize'])
     voice = voice_polish(voice)
-    rms = np.sqrt(np.mean(voice ** 2) + 1e-12); voice *= db(-19) / rms
+    rms = np.sqrt(np.mean(voice ** 2) + 1e-12); voice *= db(script.get('voice_db', -17.5)) / rms
     mix += voice
 # music
 mus = script.get('music', 'bed')
 if mus and mus != 'none':
-    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else music_epic() if mus == 'epic' else None
+    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else music_epic() if mus == 'epic' else music_bright() if mus == 'bright' else None
     if m is None:
         a = load_audio(P / mus)[:N]; m = np.zeros(N); m[:len(a)] = a.mean(1); m /= np.abs(m).max() + 1e-9
-    m = np.stack([m, m], 1) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -15 if mus == 'epic' else -24) if voice is not None else -20)
+    m = (m if m.ndim == 2 else np.stack([m, m], 1)) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -15 if mus == 'epic' else -13 if mus == 'bright' else -24) if voice is not None else -20)
     if voice is not None:                                                        # duck under the voice
         lev = np.abs(voice.mean(1)); lev = signal.lfilter([1 - 0.9995], [1, -0.9995], lev); lev /= lev.max() + 1e-9
-        m *= (1 - (0.4 if mus in ('quirk', 'dry', 'epic') else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
+        m *= (1 - (0.4 if mus in ('quirk', 'dry', 'epic', 'bright') else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
     mix += m
 # effects
 for c in cj['cues']:

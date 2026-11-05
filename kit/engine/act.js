@@ -70,3 +70,12 @@ export function squashHop(t, t0, dur = 0.4) {
 export function applySquash(p, sq = 0) { p.mesh.scale.set(1 + sq * 0.14, 1 - sq * 0.14, 1); }
 /** a lantern flicker multiplier (0.85..1.1) */
 export const flicker = (t, seed = 0) => 1 + Math.sin(t * 13 + seed) * 0.05 + Math.sin(t * 7.3 + seed * 2) * 0.04 + Math.sin(t * 29 + seed * 5) * 0.02;
+
+/** anime-smooth arm: shoulder springs to each key, the elbow follows 70 ms later with a softer, bigger overshoot
+ *  (overlapping action), plus a constant gentle sway so arms are never frozen. list = [[t0, [shoulder, elbow]], ...] */
+export function arm(t, list, { seed = 0, lag = 0.07, dur = 0.3 } = {}) {
+  const s = keys(t, list, dur, back), e = keys(t - lag, list, dur * 1.25, (x) => { const c = 2.4; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); });
+  return [s[0] + Math.sin(t * 2.1 + seed) * 2.5, e[1] + Math.sin(t * 2.6 + seed * 1.7) * 4];
+}
+/** an idle arm pose that breathes (use when a shot doesn't pose the arm) */
+export const idleArm = (t, seed = 0, side = 1) => [10 + Math.sin(t * 2.1 + seed + side) * 3, 8 + Math.sin(t * 2.6 + seed * 1.3 + side) * 5];

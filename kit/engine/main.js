@@ -53,7 +53,7 @@ function draw(t) {
 
 (async () => {
   try {
-    await document.fonts.load('900 100px Inter'); await document.fonts.load('800 100px Inter');
+    await document.fonts.load('900 100px Inter'); await document.fonts.load('800 100px Inter'); await document.fonts.load('900 100px Nunito').catch(() => {});
     const script = await (await fetch('script.json', { cache: 'no-store' })).json();
     await loadTiming();
     buildCaptions(script);

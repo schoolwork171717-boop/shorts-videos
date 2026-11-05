@@ -11,7 +11,7 @@ After building the Iron Canyon style and creating a project, copy these over the
 script.json defaults for every new Short:
 
 ```json
-{ "voice": "am_fenrir:0.5+am_puck:0.25+am_eric:0.25", "speed": 1.2, "lead": 0.2, "gap": 0.1, "outro": 1.0, "music": "epic" }
+{ "voice": "am_fenrir:0.4+am_eric:0.4+am_puck:0.2", "speed": 1.3, "lead": 0.12, "gap": 0.04, "outro": 0.6, "music": "bright" }
 ```
 
 The voice is a natural blend of three Kokoro voices (the deadpan narrator, the younger Puck, the brighter Eric) at 1.2x:
@@ -71,3 +71,14 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
   (radiant burst behind a reveal), `FX.speedLines(t, k, cx, cy)` (shock / impact / fast zoom), `FX.vignetteGlow`.
 - **Squash & stretch (act.js):** `sq: A.squashHop(t, t0, dur)` with every hop (act() applies it via `A.applySquash`),
   `A.flicker(t, seed)` for lantern lights.
+
+## v6 (matched to the user's own reference video)
+- Voice: blend `am_fenrir:0.4+am_eric:0.4+am_puck:0.2` at 1.3, gap 0.04 (fast, continuous, ~135 Hz); mixer voice -17.5 dB.
+- Music: `"bright"` (original playful stereo bed with reverb) is the default.
+- Captions: Nunito Black rounded white, slim dark edge, soft shadow, y 1420 (kit/engine/captions.js + index.html + fonts/).
+- Render at 60 fps (`FPS=60`), 2-second segments.
+- Camera float + breathing zoom + roll in shoot(); grade with teal-navy shadows and warm highlights, vignette 0.32.
+- Posting times (Phoenix) aimed at US Eastern evening peaks (Buffer 2026): Mon 3 & 6 PM, Tue 6 & 7 PM, Wed 5 & 6 PM,
+  Thu 5 & 6 PM, Fri 2 & 4 PM, Sat 9 AM & 5 PM, Sun 5 & 6 PM.
+- Hashtags: 4-5 specific ones in the description: #shorts + 2 topic tags + 1-2 audience tags (#didyouknow, #history,
+  #science, #facts...), never more than 15; 6-8 specific keyword tags.

@@ -70,7 +70,7 @@ const GRADE = {
 };
 
 /** default grade, change per film: STYLE-wide `GRADE_DEFAULT`, per frame `look.grade = { vib, con, split, shadow, high }`, `look.sat` */
-export const GRADE_DEFAULT = { sat: 1.2, vib: 0.5, con: 0.24, split: 0.45, shadow: '#3A3CA8', high: '#FFD890' };
+export const GRADE_DEFAULT = { sat: 1.2, vib: 0.5, con: 0.32, split: 0.5, shadow: '#1E4A6E', high: '#FFC878', vignette: 0.32 };
 
 export function makeEngine(canvas, { w = W, h = H, samples = 4, shadowSize = 2048 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -119,7 +119,7 @@ export function makeEngine(canvas, { w = W, h = H, samples = 4, shadowSize = 204
       bokeh.uniforms.focus.value = look.focus ?? 3; bokeh.uniforms.aperture.value = look.aperture ?? 0.0015; bokeh.uniforms.maxblur.value = look.maxblur ?? 0.006;
       bloom.strength = look.bloom ?? 0.3; bloom.threshold = look.bloomThreshold ?? 0.85; bloom.radius = 0.6;
       renderer.toneMappingExposure = look.exposure ?? 1.0;
-      grade.uniforms.uVig.value = look.vignette ?? 0.18; grade.uniforms.uGrain.value = look.grain ?? 0.008; grade.uniforms.uSat.value = look.sat ?? GRADE_DEFAULT.sat; grade.uniforms.uWarm.value = look.warm ?? 0.02; const GD = { ...GRADE_DEFAULT, ...(look.grade || {}) }; grade.uniforms.uVib.value = GD.vib; grade.uniforms.uCon.value = GD.con; grade.uniforms.uSplit.value = GD.split; grade.uniforms.uShadow.value.set(GD.shadow); grade.uniforms.uHigh.value.set(GD.high); grade.uniforms.uTime.value = look.t ?? 0;
+      grade.uniforms.uVig.value = look.vignette ?? GRADE_DEFAULT.vignette; grade.uniforms.uGrain.value = look.grain ?? 0.008; grade.uniforms.uSat.value = look.sat ?? GRADE_DEFAULT.sat; grade.uniforms.uWarm.value = look.warm ?? 0.02; const GD = { ...GRADE_DEFAULT, ...(look.grade || {}) }; grade.uniforms.uVib.value = GD.vib; grade.uniforms.uCon.value = GD.con; grade.uniforms.uSplit.value = GD.split; grade.uniforms.uShadow.value.set(GD.shadow); grade.uniforms.uHigh.value.set(GD.high); grade.uniforms.uTime.value = look.t ?? 0;
       composer.render();
     },
   };

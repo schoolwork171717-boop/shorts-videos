@@ -47,7 +47,10 @@ export function buildShots(E) {
   const LK = { bloom: 0.42, bloomThreshold: 0.92, aperture: 0.0007, maxblur: 0.007 };
   const shoot = (scene, people, p, a, look = LK, shake = 0, t = NOW, fov = 40) => {
     const f = look.fov || fov; if (cam.fov !== f) { cam.fov = f; cam.updateProjectionMatrix(); }
-    cam.position.copy(p); if (shake) cam.position.add(V3(Math.sin(t * 61) * shake, Math.cos(t * 47) * shake, Math.sin(t * 53) * shake * 0.5)); cam.lookAt(a);
+    cam.position.copy(p); if (shake) cam.position.add(V3(Math.sin(t * 61) * shake, Math.cos(t * 47) * shake, Math.sin(t * 53) * shake * 0.5));
+    // the camera is never still: a slow operator float + a breathing zoom + a whisper of roll (v6)
+    const fl = look.float ?? 1; cam.position.add(V3(Math.sin(t * 0.9) * 0.05 * fl, Math.sin(t * 1.3 + 1) * 0.035 * fl, Math.sin(t * 0.7 + 2) * 0.04 * fl));
+    cam.lookAt(a); cam.rotateZ(Math.sin(t * 0.6 + 0.5) * 0.012 * fl); cam.fov = f * (1 - Math.sin(t * 0.8) * 0.012 * fl); cam.updateProjectionMatrix();
     people.forEach((q) => q.face(cam)); E.render(scene, cam, { ...look, focus: look.focus ?? cam.position.distanceTo(a), t });
   };
   // every person is always alive: eye darts, blinks, head sway, breathing. o = mood timeline result + pose overrides
@@ -94,9 +97,9 @@ export function buildShots(E) {
   { const st = Wd('earthquake', 0) - 0.35, hd = Wd('hundreds', 0);
     add({ id: 'S02', at: st, trans: 'zoom', shafts: 0.6, note: 'wide on the jar: rivals hop in shock, Zhang Heng in front turns to camera with a proud grin; overlay pops on "hundreds"', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, zhang, rivA, rivB); J.update(t, { drop: 0, k: 1, glow: 0.6 });
-      act(rivA, -1.15, 1.75, { ...A.face(t, [[0, 'neutral'], [st + 0.1, 'gasp'], [st + 1.0, 'shock']]), armL: A.keys(t, [[0, [12, 10]], [st + 0.1, [150, 40]]]), armR: A.keys(t, [[0, [12, 10]], [st + 0.12, [150, 40]]]), hopY: A.hop(t, st + 0.1, 0.35, 0.35), sq: A.squashHop(t, st + 0.1, 0.35) });
-      act(rivB, 1.25, 1.65, { ...A.face(t, [[0, 'neutral'], [st + 0.15, 'shock'], [st + 1.1, 'worried']]), armR: A.keys(t, [[0, [12, 10]], [st + 0.15, [100, 80]]]), holdR: P2.fan, hopY: A.hop(t, st + 0.15, 0.35, 0.3), sq: A.squashHop(t, st + 0.15, 0.35) });
-      act(zhang, 0.2, 2.6, { ...A.face(t, [[0, 'happy'], [st + 0.5, 'proud'], [hd, 'excited']]), armL: A.keys(t, [[0, [20, 10]], [st + 0.5, [60, -60]], [hd, [150, 20]]]), armR: A.keys(t, [[0, [20, 10]], [hd + 0.08, [150, 20]]]), tilt: -6 });
+      act(rivA, -1.15, 1.75, { ...A.face(t, [[0, 'neutral'], [st + 0.1, 'gasp'], [st + 1.0, 'shock']]), armL: A.arm(t, [[0, [12, 10]], [st + 0.1, [150, 40]]]), armR: A.arm(t, [[0, [12, 10]], [st + 0.12, [150, 40]]]), hopY: A.hop(t, st + 0.1, 0.35, 0.35), sq: A.squashHop(t, st + 0.1, 0.35) });
+      act(rivB, 1.25, 1.65, { ...A.face(t, [[0, 'neutral'], [st + 0.15, 'shock'], [st + 1.1, 'worried']]), armR: A.arm(t, [[0, [12, 10]], [st + 0.15, [100, 80]]]), holdR: P2.fan, hopY: A.hop(t, st + 0.15, 0.35, 0.3), sq: A.squashHop(t, st + 0.15, 0.35) });
+      act(zhang, 0.2, 2.6, { ...A.face(t, [[0, 'happy'], [st + 0.5, 'proud'], [hd, 'excited']]), armL: A.arm(t, [[0, [20, 10]], [st + 0.5, [60, -60]], [hd, [150, 20]]]), armR: A.arm(t, [[0, [20, 10]], [hd + 0.08, [150, 20]]]), tilt: -6 });
       shoot(HALL.scene, [zhang, rivA, rivB], mix(V3(0.3, 2.0, 8.8), V3(0.2, 1.8, 7.2), drift(clamp(lt / d))), V3(0.1, 1.6, 0.6), { ...LK, fov: 42 });
       blit(); FX.speedLines(t, 1 - A.clamp((t - st - 0.1) / 0.6)); FX.orbs(t, { k: 0.8 }); big('HUNDREDS OF', 540, 300, 96, A.pop(t, hd), '#FFFFFF'); big('KM AWAY?!', 540, 410, 130, A.pop(t, hd + 0.12), '#FFD15C', -0.04);
     } });
@@ -120,7 +123,7 @@ export function buildShots(E) {
       hideAll(); into(HALL.scene, zhang); J.update(t, { glow: 0.2 });
       const wk = clamp((t - st) / (zh - st + 0.1)), x = lerp(-2.2, -1.25, eio(wk)), z = lerp(0.8, 3.0, eio(wk)), walking = wk < 1;
       act(zhang, x, z, { ...A.face(t, [[0, 'content'], [zh, 'proud'], [zh + 0.5, 'smug'], [bu, 'excited']]), legs: walking ? 'walk' : 'stand', phase: t * 8,
-        armL: A.keys(t, [[0, [20, -40]], [zh, [40, -90]], [bu - 0.1, [150, 30]]]), armR: A.keys(t, [[0, [20, -40]], [zh, [40, -90]], [bu - 0.05, [120, 20]]]), holdR: t < bu - 0.1 ? P2.scroll : undefined, lean: A.keys(t, [[0, 0], [zh + 0.05, 10], [zh + 0.4, 0]]) });
+        armL: A.arm(t, [[0, [20, -40]], [zh, [40, -90]], [bu - 0.1, [150, 30]]]), armR: A.arm(t, [[0, [20, -40]], [zh, [40, -90]], [bu - 0.05, [120, 20]]]), holdR: t < bu - 0.1 ? P2.scroll : undefined, lean: A.keys(t, [[0, 0], [zh + 0.05, 10], [zh + 0.4, 0]]) });
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [zhang], mix(V3(-1.0, 1.7, 7.2), V3(-1.1, 1.65, 5.6), k), mix(V3(-1.7, 1.4, 2.4), V3(-1.0, 1.6, 1.2), k));
       blit(); { const [hx, hy] = headXY(zhang, 1.95); big('ZHANG HENG', 540, 300, 104, A.pop(t, zh), '#FFD15C'); big('court astronomer', 540, 400, 54, A.pop(t, zh + 0.15), '#FFFFFF'); FX.sparkle(hx + 120, hy - 60, t, A.pop(t, zh)); }
@@ -131,7 +134,7 @@ export function buildShots(E) {
   { const st = Wd('built', 2) - 0.05, tw = Wd('two', 2), wi = Wd('wide', 2);
     add({ id: 'S05', at: st, trans: 'whip', shafts: 0.9, shaftX: CW * 0.35, note: 'low crane rising up the glowing jar; Zhang Heng beside it spreads his arms, a width arrow snaps across "2 METERS"', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, zhang); J.update(t, { glow: 0.3 + 0.4 * A.pop(t, st + 0.2) }); HALL.lanterns.forEach((l, i) => l.userData.light && (l.userData.light.intensity = 3 * A.flicker(t, i)));
-      act(zhang, 1.35, 1.85, { ...A.face(t, [[0, 'excited'], [tw, 'proud'], [wi + 0.2, 'laugh']]), armL: A.keys(t, [[0, [30, 10]], [tw - 0.1, [100, 0]]]), armR: A.keys(t, [[0, [30, 10]], [tw - 0.1, [100, 0]]]), tilt: 4 });
+      act(zhang, 1.35, 1.85, { ...A.face(t, [[0, 'excited'], [tw, 'proud'], [wi + 0.2, 'laugh']]), armL: A.arm(t, [[0, [30, 10]], [tw - 0.1, [100, 0]]]), armR: A.arm(t, [[0, [30, 10]], [tw - 0.1, [100, 0]]]), tilt: 4 });
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [zhang], mix(V3(0.5, 0.7, 8.0), V3(0.6, 2.6, 8.8), k), mix(V3(0.35, 1.0, 0.4), V3(0.4, 1.7, 0.4), k), { ...LK, fov: 48 });
       { const jc = toScreen(V3(0, 1.6, 0)); ctx.save(); blit(); ctx.restore(); FX.godray(jc[0], jc[1], t, { k: 0.8 * A.pop(t, st + 0.2, 0.6) }); FX.orbs(t, {}); } const ak = A.pop(t, tw, 0.4); if (ak > 0) { const [lx, ly] = toScreen(V3(-0.98, 1.2, 0.95)), [rx, ry] = toScreen(V3(0.98, 1.2, 0.95)); const cx = (lx + rx) / 2, hw = (rx - lx) / 2 * Math.min(1, ak);
@@ -155,7 +158,7 @@ export function buildShots(E) {
   { const st = cut(4), to = Wd('toad', 4), op = Wd('open', 4);
     add({ id: 'S07', at: st, trans: 'whip', whipDir: -1, note: 'camera skims the floor past the toads; rival B kneels and peers into a toad mouth, gasps on "open", fan flutters', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, rivB); J.update(t, { glow: 0.3 });
-      act(rivB, 1.5, 1.65, { ...A.face(t, [[0, 'skeptic'], [to, 'neutral'], [op, 'gasp']]), legs: 'sit', armR: A.keys(t, [[0, [40, 80]], [op, [150, 60]]]), holdR: P2.fan, tilt: A.keys(t, [[0, -12], [op, 6]]), eyeS: 1.1 }, -0.35);
+      act(rivB, 1.5, 1.65, { ...A.face(t, [[0, 'skeptic'], [to, 'neutral'], [op, 'gasp']]), legs: 'sit', armR: A.arm(t, [[0, [40, 80]], [op, [150, 60]]]), holdR: P2.fan, tilt: A.keys(t, [[0, -12], [op, 6]]), eyeS: 1.1 }, -0.35);
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [rivB], mix(V3(-0.4, 0.6, 4.0), V3(1.0, 0.8, 4.0), k), mix(V3(0.3, 0.45, 1.3), V3(1.25, 0.65, 1.4), k), { ...LK, fov: 42, aperture: 0.0012 });
       blit(); big('TOADS', 540, 330, 130, A.pop(t, to), '#7FE0B0');
@@ -204,9 +207,9 @@ export function buildShots(E) {
     add({ id: 'S11', at: st, trans: 'whip', shafts: 0.6, note: 'wide on the hall: rivals chatting with fans, the emperor on a stool; a ball drops on "fell", everyone snaps round, then looks at the still floor, shrugs on "nobody"', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, rivA, rivB, emp); J.update(t, { drop: 6, k: eio(clamp((t - fe + 0.35) / 0.35)), glow: 0.3 + A.pop(t, fe) * 0.4 });
       const turn = (p, x) => (t > fe ? lookAtX(p, 0) : [0.6, 0]);
-      act(rivA, -1.3, 2.6, { ...A.face(t, [[0, 'laugh'], [fe, 'shock'], [no, 'skeptic']]), armL: A.keys(t, [[0, [60, -60]], [fe, [150, 40]], [no + 0.2, [70, -70]]]), armR: A.keys(t, [[0, [12, 10]], [no + 0.2, [70, -70]]]), look: t > no ? [0, 1] : turn(rivA, 0), hopY: A.hop(t, fe, 0.3, 0.25) });
-      act(rivB, -0.25, 3.4, { ...A.face(t, [[0, 'happy'], [fe + 0.05, 'gasp'], [no + 0.1, 'skeptic']]), armR: A.keys(t, [[0, [60, 80]], [fe, [150, 60]]]), holdR: P2.fan, look: t > no ? [0, 1] : [-0.6, 0], hopY: A.hop(t, fe + 0.05, 0.3, 0.25) });
-      act(emp, 1.3, 2.8, { ...A.face(t, [[0, 'content'], [fe + 0.1, 'shock'], [no + 0.2, 'skeptic']]), armL: A.keys(t, [[0, [20, 10]], [no + 0.25, [60, -80]]]), look: t > no ? [-0.3, 0.8] : [-0.7, 0] });
+      act(rivA, -1.3, 2.6, { ...A.face(t, [[0, 'laugh'], [fe, 'shock'], [no, 'skeptic']]), armL: A.arm(t, [[0, [60, -60]], [fe, [150, 40]], [no + 0.2, [70, -70]]]), armR: A.arm(t, [[0, [12, 10]], [no + 0.2, [70, -70]]]), look: t > no ? [0, 1] : turn(rivA, 0), hopY: A.hop(t, fe, 0.3, 0.25) });
+      act(rivB, -0.25, 3.4, { ...A.face(t, [[0, 'happy'], [fe + 0.05, 'gasp'], [no + 0.1, 'skeptic']]), armR: A.arm(t, [[0, [60, 80]], [fe, [150, 60]]]), holdR: P2.fan, look: t > no ? [0, 1] : [-0.6, 0], hopY: A.hop(t, fe + 0.05, 0.3, 0.25) });
+      act(emp, 1.3, 2.8, { ...A.face(t, [[0, 'content'], [fe + 0.1, 'shock'], [no + 0.2, 'skeptic']]), armL: A.arm(t, [[0, [20, 10]], [no + 0.25, [60, -80]]]), look: t > no ? [-0.3, 0.8] : [-0.7, 0] });
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [rivA, rivB, emp], mix(V3(0.1, 2.1, 9.6), V3(0.1, 1.9, 8.4), k), V3(0.1, 1.5, 1.0), { ...LK, fov: 46 }, 0, t);
       blit(); [rivA, emp].forEach((p, i) => qmark(...headXY(p, 2.15).map((v, j) => v + (j ? -40 : 30)), A.pop(t, no + 0.15 + i * 0.1), t));
@@ -218,8 +221,8 @@ export function buildShots(E) {
   { const st = cut(9), sa = Wd('said', 9), br = Wd('broken', 9);
     add({ id: 'S12', at: st, trans: 'zoom', note: 'over-the-shoulder of a worried Zhang Heng: the two rivals point and double over laughing on "broken"; a BROKEN? stamp slams on', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, zhang, rivA, rivB); J.update(t, { drop: 6, k: 1 });
-      act(rivA, -0.7, 0.6 + 2.2, { ...A.face(t, [[0, 'smug'], [sa, 'scheme'], [br, 'laugh']]), armR: A.keys(t, [[0, [20, 10]], [sa, [100, -10]]]), armL: A.keys(t, [[0, [12, 10]], [br, [60, -90]]]), lean: A.keys(t, [[0, 0], [br, -10]]) , look: [1, 0] });
-      act(rivB, 0.55, 0.3 + 2.2, { ...A.face(t, [[0, 'skeptic'], [sa + 0.1, 'smug'], [br + 0.05, 'laugh']]), armL: A.keys(t, [[0, [40, 80]], [br, [150, 60]]]), holdL: P2.fan, lean: A.keys(t, [[0, 0], [br, 10]]) });
+      act(rivA, -0.7, 0.6 + 2.2, { ...A.face(t, [[0, 'smug'], [sa, 'scheme'], [br, 'laugh']]), armR: A.arm(t, [[0, [20, 10]], [sa, [100, -10]]]), armL: A.arm(t, [[0, [12, 10]], [br, [60, -90]]]), lean: A.keys(t, [[0, 0], [br, -10]]) , look: [1, 0] });
+      act(rivB, 0.55, 0.3 + 2.2, { ...A.face(t, [[0, 'skeptic'], [sa + 0.1, 'smug'], [br + 0.05, 'laugh']]), armL: A.arm(t, [[0, [40, 80]], [br, [150, 60]]]), holdL: P2.fan, lean: A.keys(t, [[0, 0], [br, 10]]) });
       act(zhang, 1.5, 4.9, { ...A.face(t, [[0, 'neutral'], [sa, 'worried'], [br + 0.2, 'strain']]), sweat: 1, look: [-0.6, 0] });
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [zhang, rivA, rivB], mix(V3(2.4, 1.85, 7.6), V3(2.2, 1.85, 7.0), k), V3(-0.1, 1.55, 2.5), { ...LK, fov: 40 });
@@ -247,9 +250,9 @@ export function buildShots(E) {
       hideAll(); into(HALL.scene, mess, emp, rivA, rivB); J.update(t, { drop: 6, k: 1, glow: 0.3 });
       const kn = clamp(lt / 0.35);
       act(mess, lerp(-2.4, -0.85, eo(kn)), 2.9, { ...A.face(t, [[0, 'strain'], [st + 0.4, 'worried']]), legs: kn < 1 ? 'run' : 'sit', phase: t * 14, armL: [100, -30], armR: [100, -30], holdR: P2.openScroll }, kn < 1 ? 0 : -0.4);
-      act(emp, 0.6, 1.9, { ...A.face(t, [[0, 'skeptic'], [bi, 'gasp'], [we + 0.3, 'shock']]), armL: A.keys(t, [[0, [20, 10]], [bi, [130, 60]]]), eyeS: 1.1 });
-      act(rivA, 1.05, 1.6, { ...A.face(t, [[0, 'smug'], [bi + 0.1, 'shock']]), armR: A.keys(t, [[0, [12, 10]], [bi + 0.1, [150, 30]]]) });
-      act(rivB, -0.4, 1.4, { ...A.face(t, [[0, 'smug'], [bi + 0.15, 'gasp']]), armR: A.keys(t, [[0, [40, 80]], [bi + 0.15, [150, 60]]]), holdR: P2.fan });
+      act(emp, 0.6, 1.9, { ...A.face(t, [[0, 'skeptic'], [bi, 'gasp'], [we + 0.3, 'shock']]), armL: A.arm(t, [[0, [20, 10]], [bi, [130, 60]]]), eyeS: 1.1 });
+      act(rivA, 1.05, 1.6, { ...A.face(t, [[0, 'smug'], [bi + 0.1, 'shock']]), armR: A.arm(t, [[0, [12, 10]], [bi + 0.1, [150, 30]]]) });
+      act(rivB, -0.4, 1.4, { ...A.face(t, [[0, 'smug'], [bi + 0.15, 'gasp']]), armR: A.arm(t, [[0, [40, 80]], [bi + 0.15, [150, 60]]]), holdR: P2.fan });
       const k = drift(clamp(lt / d));
       shoot(HALL.scene, [mess, emp, rivA, rivB], mix(V3(-1.2, 1.5, 9.0), V3(-0.8, 1.6, 8.0), k), V3(-0.1, 1.3, 2.4), { ...LK, fov: 44 }, A.jolt(t, st + 0.35, 0.3, 0.02), t);
       blit(); big('EARTHQUAKE!', 540, 330, 130, A.pop(t, Wd('earthquake', 11)), '#FF8A5C', 0.04);
@@ -270,8 +273,8 @@ export function buildShots(E) {
   { const st = cut(12), ja = Wd('jar', 12), hu = Wd('hundreds', 12);
     add({ id: 'S16', at: st, trans: 'zoom', shafts: 1, shaftX: CW * 0.4, note: 'Zhang Heng beams beside the jar, the emperor laughs and claps him on the shoulder, rivals sulk; a long rising pull-back to the glowing jar in the great hall', draw(lt, d, t, blit) {
       hideAll(); into(HALL.scene, zhang, emp, rivA, rivB); J.update(t, { drop: 6, k: 1, glow: 0.6 + 0.3 * Math.sin(t * 3) });
-      act(zhang, -0.7, 2.7, { ...A.face(t, [[0, 'proud'], [ja, 'excited'], [hu + 0.4, 'laugh']]), armL: A.keys(t, [[0, [30, 10]], [ja, [150, 20]]]), armR: A.keys(t, [[0, [20, 10]], [ja + 0.1, [60, -80]]]), hopY: A.hop(t, ja, 0.4, 0.2), sq: A.squashHop(t, ja, 0.4) });
-      act(emp, 0.45, 2.35, { ...A.face(t, [[0, 'happy'], [ja + 0.2, 'laugh']]), armL: A.keys(t, [[0, [20, 10]], [ja + 0.2, [80, 20]]]) });
+      act(zhang, -0.7, 2.7, { ...A.face(t, [[0, 'proud'], [ja, 'excited'], [hu + 0.4, 'laugh']]), armL: A.arm(t, [[0, [30, 10]], [ja, [150, 20]]]), armR: A.arm(t, [[0, [20, 10]], [ja + 0.1, [60, -80]]]), hopY: A.hop(t, ja, 0.4, 0.2), sq: A.squashHop(t, ja, 0.4) });
+      act(emp, 0.45, 2.35, { ...A.face(t, [[0, 'happy'], [ja + 0.2, 'laugh']]), armL: A.arm(t, [[0, [20, 10]], [ja + 0.2, [80, 20]]]) });
       act(rivA, 1.15, 1.6, { ...A.face(t, [[0, 'shock'], [ja + 0.4, 'sad']]), sweat: 1 }); act(rivB, -1.25, 1.5, { ...A.face(t, [[0, 'gasp'], [ja + 0.5, 'worried']]), armR: [40, 80], holdR: P2.fan });
       const k = eio(clamp((lt - 0.6) / (d - 0.6)));
       shoot(HALL.scene, [zhang, emp, rivA, rivB], mix(V3(0.2, 1.8, 7.4), V3(0.4, 6.5, 15), k), mix(V3(0.1, 1.6, 2.2), V3(0, 2.2, -1), k), { ...LK, fov: lerp(42, 50, k), aperture: k > 0.1 ? 0 : 0.0007 });
