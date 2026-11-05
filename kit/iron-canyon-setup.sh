@@ -600,11 +600,16 @@ MIXURL=https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/mai
 if curl -fsSL "$MIXURL" -o /tmp/ic-mix.py 2>/dev/null && grep -q music_dry /tmp/ic-mix.py; then cp /tmp/ic-mix.py tools/mix.py
 elif [ -f "$HOME/shorts-videos/kit/mix.py" ]; then cp "$HOME/shorts-videos/kit/mix.py" tools/mix.py
 else echo "WARNING: Iron Canyon mixer (dry/quirk music + voice polish) not found; using the default mixer"; fi
-for f in engine.js fx.js main.js; do case $f in main.js) dst=src/main.js;; *) dst=src/core/$f;; esac
+for f in engine.js fx.js main.js toon.js act.js han.js beasts.js; do case $f in main.js) dst=src/main.js;; *) dst=src/core/$f;; esac
   curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/engine/$f" -o "/tmp/ic-$f" 2>/dev/null && grep -q . "/tmp/ic-$f" && cp "/tmp/ic-$f" "$dst" \
     || cp "$HOME/shorts-videos/kit/engine/$f" "$dst" 2>/dev/null || echo "WARNING: engine v3 file $f not found; the old flat look is used"; done
 mkdir -p examples
-for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
+for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
+# voice energizer (WORLD vocoder) for mix.py's "energize"
+PYV="$HOME/.faceless-shorts/venv/bin/python"
+if [ -x "$PYV" ] && ! "$PYV" -c "import pyworld" 2>/dev/null; then
+  (command -v uv >/dev/null && uv pip install --python "$PYV" -q pyworld "setuptools<70") || "$PYV" -m pip install -q pyworld "setuptools<70" 2>/dev/null || echo "WARNING: pyworld not installed; the voice will not be energized"
+fi
 cat > '../STYLE.md' <<'IC_FILE_EOF'
 # Iron Canyon 3D: wild true work stories, 9:16
 
@@ -629,9 +634,10 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
   (y 1340). No colour highlight. Words keep their punctuation; a chunk ends at a comma or full stop.
 - Story shape: open on the craziest true fact ("they ate lunch 800 feet up, every day"), then explain the job step by
   step, one picture per clause, short reaction beats, end on a deadpan punchline.
-- Narration: dry, deadpan storyteller, `am_fenrir` x1.1 (lead 0.2, gap 0.12), flat factual sentences. Music `"dry"`:
-  the original sparse documentary bed from `tools/mix.py`, ~20 dB under the voice, ducked while talking; mix lands at
-  about -14 to -15 LUFS. Sounds: `whoosh` on cuts, wind on
+- Narration: an excited storyteller with a dry wit: `am_fenrir` x1.15 (lead 0.2, gap 0.1) plus `"energize": { "up": 1.5,
+  "expr": 1.4 }` (pitch +1.5 semitones and 40 % more pitch movement, timing unchanged). Write with energy: questions,
+  "Clang!", "But days later...", a few exclamation marks on the big beats. Music: `"epic"` (original 120 BPM pentatonic
+  adventure bed with big drums) for history and grand stories, `"dry"` for quiet ones; ~18-20 dB under the voice. Sounds: `whoosh` on cuts, wind on
   height reveals, `clank` / `ding` on steel, `chug` for trains.
 - True stories only (railroad crews, bridge and dam builders, lineworkers, old jobs), checked against good sources and
   listed in `script.json` "sources". The look is inspired by a format; never copy another creator's script, shots or frames.
@@ -672,6 +678,29 @@ Built on the Tall Tale 3D engine. Sheet: `style-sheet.png` (drawn by `example/sh
   the cel shading), a blinding white glare fading as someone steps into daylight.
 - The 9:16 frame is narrow, so stage in depth, not side by side: team behind the hero, items along the hero's path,
   the camera tracking. Check the contact sheet (`sheet review/all.jpg 1.0 8` at `res=0.4&ink=0`) for anyone cut off.
+
+## 1f. Acting v4: faces that blend, people who never stop
+- **Never snap a face.** Drive moods with `A.face(t, [[t0, 'neutral'], [word, 'shock'], ...])` from `core/act.js` and
+  spread the result into `set()`: brows slide with overshoot, eyes squint shut-and-open through the change, the mouth
+  shrinks and grows into the new shape, the head squashes/stretches (the "take"). Change a face every 0.5-1.5 s.
+- New moods: `excited` (big eyes + wide grin), `gasp` (huge eyes, big O), `skeptic` (one brow up), `scheme` (toothy
+  smirk). `tilt` (head tilt deg), `eyeS` / `mouthS` exaggerate.
+- **Always alive.** Run every visible person through an `act()` helper that merges `A.alive(t, seed)` (eye darts every
+  0.6-1.3 s, blinks, head sway, breathing) under the shot's own state.
+- **Poses on the beat.** Arms with `A.keys(t, [[t0, [20, 10]], [word, [150, 30]]])` (springy blend), jumps with
+  `A.hop`, hits with `A.jolt`, props and text with `A.pop`.
+- **Pace:** about 16 shots in 40 s (1.2-4 s each) and something happens on nearly every word. Transitions: give shots
+  `trans: 'zoom'` (punch through) or `trans: 'whip'` (smeared pan) alternately, `cut: true` for impacts.
+- **Staging in 9:16:** at fov 40-46 everyone must sit within ±0.21-0.24 × distance of the look point sideways. Stage in
+  depth (one in front, others behind), never three people side by side at 2 m.
+- **Majestic colour:** the engine grade (vibrance, S-curve, split toning) is on by default. Build every set with a
+  cool/warm contrast: warm key light and lanterns against indigo, violet and jade (floors, walls, fog, distant peaks);
+  never let one warm colour fill the frame. `HN.majSky` gives 3-stop sunset skies with a glowing sun; `HN.peaks` misty
+  mountains. Keep `bloomThreshold` at ~0.92 so white faces don't glow.
+- Han China kit (`core/han.js`): `court(E, { time })`, `jarHall(E)`, `westLand(E)`, `palace()`, `curvedRoof()`,
+  `lantern()`, `banner()`, `plumTree()`, `jar()`; robes `robe: true, sleeves: true, trim`, hats `scholar`, `mian`,
+  `official`, `headband`, `extra: ['longmustache', 'goatee']`; `Horse` cut-out in `core/beasts.js`. Example:
+  `examples/jar-shots.js`.
 
 ## 1c. Format notes (from the reference channel)
 - 45-66 s, one true story, told deadpan. Title = the hook in plain words ("Why Perfect Railroads Don't Work",

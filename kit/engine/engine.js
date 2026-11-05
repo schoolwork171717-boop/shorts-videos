@@ -49,15 +49,28 @@ export const STYLE = { ink: true, cel: true, inkStrength: 0.9 };
 const Q = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 export const RES = +(Q.get('res') || 1), AA = +(Q.get('aa') ?? 4), SHADOW = +(Q.get('shadow') || 2048);
 if (Q.get('ink') === '0') STYLE.ink = false; if (Q.get('cel') === '0') STYLE.cel = false;
+// the colour grade ("majestic"): vibrance lifts dull colours most, an S-curve adds punch, split toning pushes shadows
+// toward violet-blue and coloured highlights toward gold (near-white cut-out faces are left white), soft vignette, grain.
 const GRADE = {
-  uniforms: { tDiffuse: { value: null }, uVig: { value: 0.35 }, uGrain: { value: 0.025 }, uTime: { value: 0 }, uWarm: { value: 0.04 }, uSat: { value: 1.12 } },
+  uniforms: { tDiffuse: { value: null }, uVig: { value: 0.35 }, uGrain: { value: 0.025 }, uTime: { value: 0 }, uWarm: { value: 0.04 }, uSat: { value: 1.12 },
+    uVib: { value: 0.45 }, uCon: { value: 0.22 }, uSplit: { value: 0.6 }, uShadow: { value: new THREE.Color('#4B3A8C') }, uHigh: { value: new THREE.Color('#FFC46B') } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uVig, uGrain, uTime, uWarm, uSat; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uVig, uGrain, uTime, uWarm, uSat, uVib, uCon, uSplit; uniform vec3 uShadow, uHigh; varying vec2 vUv;
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)) + uTime * 7.13) * 43758.5453); }
     void main(){ vec4 c = texture2D(tDiffuse, vUv); vec2 d = vUv - 0.5; d.x *= 0.5625;
-      c.rgb *= 1.0 - uVig * smoothstep(0.25, 0.75, length(d) * 1.4);
-      c.rgb += (h(vUv * 1000.0) - 0.5) * uGrain; c.r += uWarm * 0.5; c.b -= uWarm * 0.5; float l = dot(c.rgb, vec3(0.299, 0.587, 0.114)); c.rgb = mix(vec3(l), c.rgb, uSat); gl_FragColor = c; }`,
+      vec3 x = clamp(c.rgb, 0.0, 1.0);
+      x = mix(x, x * x * (3.0 - 2.0 * x), uCon);
+      float l = dot(x, vec3(0.299, 0.587, 0.114)), mx = max(x.r, max(x.g, x.b)), mn = min(x.r, min(x.g, x.b)), s = mx - mn;
+      x = mix(vec3(l), x, uSat * (1.0 + uVib * (1.0 - s) * smoothstep(0.02, 0.12, s)));
+      float colourful = smoothstep(0.04, 0.22, s);
+      x += uSplit * 0.22 * ((1.0 - smoothstep(0.0, 0.55, l)) * (uShadow - vec3(0.42)) + smoothstep(0.45, 1.0, l) * colourful * (uHigh - vec3(0.72)));
+      x *= 1.0 - uVig * smoothstep(0.25, 0.75, length(d) * 1.4);
+      x += (h(vUv * 1000.0) - 0.5) * uGrain; x.r += uWarm * 0.5; x.b -= uWarm * 0.5;
+      gl_FragColor = vec4(x, c.a); }`,
 };
+
+/** default grade, change per film: STYLE-wide `GRADE_DEFAULT`, per frame `look.grade = { vib, con, split, shadow, high }`, `look.sat` */
+export const GRADE_DEFAULT = { sat: 1.2, vib: 0.5, con: 0.24, split: 0.45, shadow: '#3A3CA8', high: '#FFD890' };
 
 export function makeEngine(canvas, { w = W, h = H, samples = 4, shadowSize = 2048 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -106,7 +119,7 @@ export function makeEngine(canvas, { w = W, h = H, samples = 4, shadowSize = 204
       bokeh.uniforms.focus.value = look.focus ?? 3; bokeh.uniforms.aperture.value = look.aperture ?? 0.0015; bokeh.uniforms.maxblur.value = look.maxblur ?? 0.006;
       bloom.strength = look.bloom ?? 0.3; bloom.threshold = look.bloomThreshold ?? 0.85; bloom.radius = 0.6;
       renderer.toneMappingExposure = look.exposure ?? 1.0;
-      grade.uniforms.uVig.value = look.vignette ?? 0.18; grade.uniforms.uGrain.value = look.grain ?? 0.008; grade.uniforms.uSat.value = look.sat ?? 1.12; grade.uniforms.uWarm.value = look.warm ?? 0.02; grade.uniforms.uTime.value = look.t ?? 0;
+      grade.uniforms.uVig.value = look.vignette ?? 0.18; grade.uniforms.uGrain.value = look.grain ?? 0.008; grade.uniforms.uSat.value = look.sat ?? GRADE_DEFAULT.sat; grade.uniforms.uWarm.value = look.warm ?? 0.02; const GD = { ...GRADE_DEFAULT, ...(look.grade || {}) }; grade.uniforms.uVib.value = GD.vib; grade.uniforms.uCon.value = GD.con; grade.uniforms.uSplit.value = GD.split; grade.uniforms.uShadow.value.set(GD.shadow); grade.uniforms.uHigh.value.set(GD.high); grade.uniforms.uTime.value = look.t ?? 0;
       composer.render();
     },
   };

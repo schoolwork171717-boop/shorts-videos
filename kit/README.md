@@ -11,11 +11,12 @@ After building the Iron Canyon style and creating a project, copy these over the
 script.json defaults for every new Short:
 
 ```json
-{ "voice": "am_fenrir", "speed": 1.1, "lead": 0.2, "gap": 0.12, "outro": 1.0, "music": "dry" }
+{ "voice": "am_fenrir", "speed": 1.15, "lead": 0.2, "gap": 0.1, "outro": 1.0, "music": "epic", "energize": { "up": 1.5, "expr": 1.4 } }
 ```
 
-am_fenrir at 1.1 is the dry, deadpan, matter-of-fact narrator (about 137 Hz median, ~5.4 syllables/s, the same pace
-as the reference channel). Write lines flat and factual and let the visuals be the joke; no exclamation marks.
+am_fenrir at 1.15 + "energize" (WORLD vocoder in mix.py: +1.5 semitones, 40 % more pitch movement, same timing) is an
+excited storyteller with a dry wit. Write with energy: questions, sound words ("Clang!"), exclamation marks on big beats.
+Music "epic" (original adventure bed) for grand/historical stories, "dry" for quiet ones. Needs pyworld (setup installs it).
 Check after mix.py: loudness about -14 to -15 LUFS, true peak -1 dB.
 
 ## Animation, not cuts
@@ -51,3 +52,11 @@ Mark a mesh `userData.noInk` / `userData.noCel` / material `userData.keepPBR` to
 (impacts) or `dissolve: 0.5` for a slower one.
 `fx.js` (new src/core/fx.js): `motes` (floating dust/embers), `shafts` (light beams), `rain`, `sparkle`, `sweat`.
 Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second segments).
+
+## Acting v4 (kit/engine: toon.js, act.js, main.js, engine.js, han.js, beasts.js)
+- `toon.js`: blended expressions (`set({ ...A.face(t, keys) })`), new moods excited/gasp/skeptic/scheme, `tilt`, `eyeS`,
+  `mouthS`, robes + wide sleeves, Han hats (scholar, mian, official, headband), long mustache, goatee.
+- `act.js`: `face`, `keys`, `alive`, `pop`, `jolt`, `hop`: pure functions of t, so segments render identically.
+- `main.js`: transitions `trans: 'zoom' | 'whip' | 'dissolve'`, `cut: true`.
+- `engine.js`: majestic grade (`GRADE_DEFAULT`, per frame `look.grade`).
+- `han.js` / `beasts.js`: Han palace sets, the seismoscope jar, a galloping horse. Example: `examples/jar-shots.js`.

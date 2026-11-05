@@ -11,7 +11,7 @@ const cv = document.getElementById('cv'), GL = document.getElementById('gl');
 setCtx(cv.getContext('2d'));
 const OP = (window.OP = { ready: false });
 
-let TMP = null;
+let TMP = null, CUR = null;
 function draw(t) {
   t = clamp(t, 0, T.dur - 1e-4);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.letterSpacing = '0px';
@@ -27,7 +27,24 @@ function draw(t) {
     TMP.getContext('2d').drawImage(cv, 0, 0); mixK = lt / X;
   }
   ctx.save(); sh.draw(lt, d, t, blit); ctx.restore();
-  if (mixK < 1) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - mixK * mixK * (3 - 2 * mixK); ctx.drawImage(TMP, 0, 0); ctx.restore(); }
+  // transitions: 'dissolve' (default), 'zoom' (punch through: old frame rushes at you, new one settles in), 'whip' (fast
+  // smeared pan). Pick per shot with sh.trans, film-wide with OP.trans.
+  const TR = sh.trans ?? OP.trans ?? 'dissolve';
+  if (mixK < 1 && TR === 'dissolve') { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - mixK * mixK * (3 - 2 * mixK); ctx.drawImage(TMP, 0, 0); ctx.restore(); }
+  else if (mixK < 1) {
+    if (!CUR) { CUR = document.createElement('canvas'); CUR.width = W; CUR.height = H; }
+    CUR.getContext('2d').drawImage(cv, 0, 0); const e = mixK * mixK * (3 - 2 * mixK);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    if (TR === 'zoom') {
+      const s1 = 1 + 0.16 * (1 - e); ctx.globalAlpha = 1; ctx.drawImage(CUR, W / 2 - W * s1 / 2, H / 2 - H * s1 / 2, W * s1, H * s1);
+      const s0 = 1 + 0.45 * e; ctx.globalAlpha = 1 - e; ctx.drawImage(TMP, W / 2 - W * s0 / 2, H / 2 - H * s0 / 2, W * s0, H * s0);
+    } else {
+      const dir = sh.whipDir ?? 1, ox = (1 - e) * W * 0.55 * dir, px = -e * W * 0.55 * dir;
+      for (let j = 4; j >= 0; j--) { ctx.globalAlpha = (j ? 0.16 : 1) * (1 - 0.25 * j / 4); ctx.drawImage(CUR, ox + j * 26 * (1 - e) * dir, 0); }
+      for (let j = 4; j >= 0; j--) { ctx.globalAlpha = (j ? 0.16 : 1) * (1 - e); ctx.drawImage(TMP, px - j * 26 * e * dir, 0); }
+    }
+    ctx.restore();
+  }
   ctx.globalAlpha = 1; ctx.letterSpacing = '0px';
   const fade = Math.min(clamp(t / 0.25), clamp((T.dur - t) / 0.4));
   if (fade < 1) { ctx.fillStyle = '#000'; ctx.globalAlpha = 1 - fade; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
