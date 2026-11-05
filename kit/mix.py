@@ -8,7 +8,7 @@ and script.json "music": "bed" (the procedural score, default) · "none" · "aud
 track, any format ffmpeg reads). The music ducks under the voice.
 
 Sound rules (STYLE.md): every effect is soft and rounded, nothing above ~5 kHz, no ticks / hats / glitches / beeps.
-Music: bed tension bounce quirk dry.
+Music: bed tension bounce quirk dry epic.  Voice: script.json "energize": {"up": 1.5, "expr": 1.4} (needs pyworld).
 Cue types: whoosh slide pop plop gulp boing bubbles sizzle sparkle thud slam tock zip alarm  (+ gain, dur)
 """
 import json, subprocess, sys
@@ -228,6 +228,68 @@ def music_dry():
     fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.15 * SR); fade[:fi] *= np.linspace(0, 1, fi)
     return x / (np.abs(x).max() + 1e-9) * fade
 
+def music_epic():
+    """majestic, driving adventure bed (script.json "music": "epic"): 120 BPM, D minor pentatonic. Plucked-zither
+    arpeggios in 16ths (Karplus-Strong), big low drums on 1 and the and-of-3, a warm swelling pad, a rising swell into
+    every 4th bar. Original."""
+    bpm = 120; beat = 60 / bpm; bar = beat * 4; x = np.zeros(N); rs = np.random.default_rng(5)
+    Dm, Bb, C, Am, F, Gm = [73.4, 110.0, 146.8], [58.3, 87.3, 116.5], [65.4, 98.0, 130.8], [55.0, 82.4, 110.0], [87.3, 130.8, 174.6], [49.0, 73.4, 98.0]
+    prog = [Dm, Bb, C, Am, Dm, F, Gm, Am]
+    pent = [146.8, 174.6, 196.0, 220.0, 261.6, 293.7, 349.2, 392.0, 440.0]          # D F G A C, two octaves
+    def put(i, y):
+        if i < 0 or i >= N: return
+        n = min(len(y), N - i); x[i:i + n] += y[:n]
+    def ks(f, d=0.6, g=1.0, damp=0.996):                                            # plucked string
+        n = int(d * SR); L = max(2, int(SR / f)); buf = rs.uniform(-1, 1, L); out = np.zeros(n)
+        for i in range(n):
+            out[i] = buf[i % L]; buf[i % L] = damp * 0.5 * (buf[i % L] + buf[(i + 1) % L])
+        return lp(out, 5000) * env(n, 0.001, 4) * g
+    cache = {}
+    def pl(f, g):
+        if f not in cache: cache[f] = ks(f)
+        return cache[f] * g
+    drum = lambda g: (np.sin(2 * np.pi * (48 + 70 * np.exp(-tt(0.5) * 18)) * tt(0.5)) * env(int(0.5 * SR), 0.002, 6) + lp(noise(0.5), 600) * env(int(0.5 * SR), 0.001, 20) * 0.5) * g
+    def pad(ch, d):
+        t_ = tt(d); y = sum(np.sin(2 * np.pi * f * 2 * t_ * (1 + dt)) for f in ch for dt in (-0.004, 0.004))
+        a = np.minimum(1, t_ / 0.4) * np.minimum(1, (d - t_) / 0.3); return lp(y, 1800) * a
+    nb = int(DUR / bar) + 2
+    for b in range(nb):
+        ch = prog[b % 8]; b0 = b * bar
+        put(int(b0 * SR), pad(ch, bar) * 0.05)
+        put(int(b0 * SR), drum(0.55)); put(int((b0 + 2.5 * beat) * SR), drum(0.38)); put(int((b0 + 3 * beat) * SR), drum(0.3))
+        if b % 2: put(int((b0 + 1.5 * beat) * SR), drum(0.22))
+        put(int(b0 * SR), pl(ch[0] * 2, 0.35)); put(int((b0 + 2 * beat) * SR), pl(ch[1] * 2, 0.25))
+        base = rs.integers(0, 4); shape = rs.choice([[0, 2, 4, 2], [0, 1, 2, 4], [4, 2, 1, 0], [0, 2, 3, 5]])
+        for k in range(16):
+            n_ = min(len(pent) - 1, base + shape[k % 4] + (2 if k >= 8 and b % 2 else 0))
+            put(int((b0 + k * beat / 4) * SR), pl(pent[n_], 0.16 if k % 4 == 0 else 0.10))
+        if b % 4 == 3:                                                              # swell into the next phrase
+            d = bar * 0.9; t_ = tt(d); put(int((b0 + bar - d) * SR), bp(noise(d), 300, 3000) * (t_ / d) ** 2 * 0.12)
+    x = lp(x, 7500); x = hp(x, 38)
+    fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.1 * SR); fade[:fi] *= np.linspace(0, 1, fi)
+    return x / (np.abs(x).max() + 1e-9) * fade
+
+def energize(v, sr_, up=1.5, expr=1.4):
+    """livelier narration without changing timing (script.json "energize": {"up": semitones, "expr": factor}): WORLD
+    vocoder raises the pitch a little and widens its movement around a slow baseline. Needs pyworld; skipped if missing."""
+    try:
+        import pyworld as pw
+        from scipy.ndimage import median_filter, uniform_filter1d
+    except Exception as e:
+        print('energize skipped (pyworld not installed):', e); return v
+    x = v.mean(1).astype(np.float64); pk = np.abs(x).max() + 1e-9; x = x / pk
+    x16 = signal.resample_poly(x, 1, 2)                                             # analyse at 24 kHz (Kokoro's rate)
+    f0, t_ = pw.harvest(x16, sr_ // 2, f0_floor=60, f0_ceil=420, frame_period=5.0)
+    sp = pw.cheaptrick(x16, f0, t_, sr_ // 2); ap_ = pw.d4c(x16, f0, t_, sr_ // 2)
+    vv = f0 > 0; lf = np.zeros_like(f0); lf[vv] = np.log2(f0[vv]); base = lf.copy(); idx = np.where(vv)[0]
+    if len(idx): base[idx] = uniform_filter1d(median_filter(lf[idx], size=241, mode='nearest'), 121, mode='nearest')
+    nf = np.zeros_like(f0); nf[vv] = 2 ** (base[vv] + (lf[vv] - base[vv]) * expr + up / 12)
+    y = pw.synthesize(nf, sp, ap_, sr_ // 2, frame_period=5.0)
+    y = signal.resample_poly(y, 2, 1)[:len(x)]; y = np.pad(y, (0, len(x) - len(y)))
+    y = y / (np.abs(y).max() + 1e-9) * pk
+    print(f'voice energized: +{up} st, expression x{expr}')
+    return np.stack([y, y], 1)
+
 def voice_polish(v):
     """make the AI voice sit closer and more natural: rumble cut, a touch of presence, gentle compression"""
     out = np.zeros_like(v)
@@ -250,19 +312,20 @@ vf = P / 'data/narration.wav'
 voice = None
 if vf.exists():
     v = load_audio(vf)[:N]; voice = np.zeros((N, 2)); voice[:len(v)] = v
+    if script.get('energize'): voice = energize(voice, SR, **script['energize'])
     voice = voice_polish(voice)
     rms = np.sqrt(np.mean(voice ** 2) + 1e-12); voice *= db(-19) / rms
     mix += voice
 # music
 mus = script.get('music', 'bed')
 if mus and mus != 'none':
-    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else None
+    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else music_epic() if mus == 'epic' else None
     if m is None:
         a = load_audio(P / mus)[:N]; m = np.zeros(N); m[:len(a)] = a.mean(1); m /= np.abs(m).max() + 1e-9
-    m = np.stack([m, m], 1) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -24) if voice is not None else -20)
+    m = np.stack([m, m], 1) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -15 if mus == 'epic' else -24) if voice is not None else -20)
     if voice is not None:                                                        # duck under the voice
         lev = np.abs(voice.mean(1)); lev = signal.lfilter([1 - 0.9995], [1, -0.9995], lev); lev /= lev.max() + 1e-9
-        m *= (1 - (0.4 if mus in ('quirk', 'dry') else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
+        m *= (1 - (0.4 if mus in ('quirk', 'dry', 'epic') else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
     mix += m
 # effects
 for c in cj['cues']:
