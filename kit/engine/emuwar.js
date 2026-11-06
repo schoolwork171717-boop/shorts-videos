@@ -1,6 +1,6 @@
 // emuwar.js (kit v8): props and a bright parliament room for funny-history stories.
 //   waterHole() · ammoCrate(label) · hayBale() · newspaper(headline) · report(lines) · medal() · puff() (smoke puff sprite)
-//   parliament(E) -> { scene, sun, benches: [[x,z]...] (seat spots), podium: [x,z] }
+//   parliament(E, { sign, carpet, leather, wall }) -> { scene, sun, benches: [[x,z]...] (seat spots), podium: [x,z] }
 import * as THREE from 'three';
 import { mat, canvasTex, sunlight, signBoard } from './world.js';
 
@@ -42,7 +42,7 @@ function paperTex(key, draw) { return canvasTex(key, 400, 520, (c, W, H) => { c.
 /** a newspaper held up like a sign (plane ~0.8 x 1.05 m). */
 export function newspaper(headline = ['BIRDS', 'BEAT', 'ARMY']) {
   const t = paperTex('news' + headline.join(), (c, W, H) => { c.fillStyle = INK; c.textAlign = 'center'; c.font = '900 30px Inter, sans-serif'; c.fillText('THE DAILY NEWS', W / 2, 50); c.fillRect(24, 64, W - 48, 5);
-    c.font = '900 84px Inter, sans-serif'; headline.forEach((l, i) => c.fillText(l, W / 2, 160 + i * 86));
+    headline.forEach((l, i) => { let fs = 84; c.font = `900 ${fs}px Inter, sans-serif`; while (c.measureText(l).width > W - 40 && fs > 30) { fs -= 4; c.font = `900 ${fs}px Inter, sans-serif`; } c.fillText(l, W / 2, 160 + i * 86); });
     c.fillStyle = 'rgba(31,28,51,0.45)'; for (let k = 0; k < 7; k++) c.fillRect(30, 420 + k * 12, W - 60 - (k % 3) * 30, 5); });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.04), mat({ map: t, roughness: 0.9, side: THREE.DoubleSide })); m.castShadow = true; return m;
 }
@@ -73,11 +73,11 @@ export function puff(col = '#E8E4EC') {
 }
 
 /** a bright, warm parliament chamber: green benches facing a central table, cream walls, tall windows, a sign. */
-export function parliament(E) {
+export function parliament(E, { sign: signText = 'PARLIAMENT', carpet: carpetCol = '#5E9E5A', leather: leatherCol = '#3E8A5A', wall: wallCol = '#F2DFB8' } = {}) {
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#F4E6C8');
   scene.environment = E.envMap; scene.environmentIntensity = 0.5;
   const sun = sunlight(scene, E, { col: '#FFF0D8', i: 2.4, pos: [-5, 9, 6], target: [0, 0.5, -1], box: 12, sky: '#FFF6E4', ground: '#9AB870', hemi: 2.0 });
-  const carpet = mat({ color: '#5E9E5A', roughness: 1 }), wall = mat({ color: '#F2DFB8', roughness: 0.9 }), wood = mat({ color: '#9A6A3E', roughness: 0.7 }), leather = mat({ color: '#3E8A5A', roughness: 0.6 });
+  const carpet = mat({ color: carpetCol, roughness: 1 }), wall = mat({ color: wallCol, roughness: 0.9 }), wood = mat({ color: '#9A6A3E', roughness: 0.7 }), leather = mat({ color: leatherCol, roughness: 0.6 });
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), carpet); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; scene.add(fl);
   box(30, 9, 0.3, wall, 0, 4.5, -7, scene); box(0.3, 9, 30, wall, -8, 4.5, 0, scene); box(0.3, 9, 30, wall, 8, 4.5, 0, scene);
   const winM = mat({ color: '#CFE8FF', emissive: '#CFE8FF', emissiveIntensity: 0.7 });
@@ -88,7 +88,7 @@ export function parliament(E) {
     box(0.9, 0.3 + y, 7, wood, x, (0.3 + y) / 2, -1.5, scene); box(0.8, 0.22, 6.8, leather, x, 0.42 + y, -1.5, scene); box(0.2, 0.7, 6.8, leather, x + side * 0.42, 0.85 + y, -1.5, scene);
     for (let k = 0; k < 4; k++) benches.push([x, -4.2 + k * 1.6, 0.53 + y, side]); } });
   box(1.6, 0.85, 3.2, wood, 0, 0.42, -1.6, scene); box(1.7, 0.06, 3.3, mat({ color: '#2E5A3E' }), 0, 0.87, -1.6, scene);   // the table
-  const sign = signBoard('PARLIAMENT', { w: 1.5, h: 0.42, bg: '#2E5A3E', fg: '#F2D37A', font: 'Inter' }); sign.position.set(0, 3.7, -6.75); scene.add(sign);
+  const sign = signBoard(signText, { w: 1.5, h: 0.42, bg: '#2E5A3E', fg: '#F2D37A', font: 'Inter' }); sign.position.set(0, 3.7, -6.75); scene.add(sign);
   const chair = new THREE.Group(); chair.position.set(0, 0, -5.4); scene.add(chair); box(1.4, 0.6, 1.0, wood, 0, 0.3, 0, chair); box(1.4, 2.4, 0.2, wood, 0, 1.4, -0.45, chair); box(1.1, 0.2, 0.8, leather, 0, 0.68, 0, chair);
   return { scene, sun, benches, podium: [0, -0.4] };
 }

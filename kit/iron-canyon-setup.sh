@@ -600,7 +600,7 @@ MIXURL=https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/mai
 if curl -fsSL "$MIXURL" -o /tmp/ic-mix.py 2>/dev/null && grep -q music_dry /tmp/ic-mix.py; then cp /tmp/ic-mix.py tools/mix.py
 elif [ -f "$HOME/shorts-videos/kit/mix.py" ]; then cp "$HOME/shorts-videos/kit/mix.py" tools/mix.py
 else echo "WARNING: Iron Canyon mixer (dry/quirk music + voice polish) not found; using the default mixer"; fi
-for f in engine.js fx.js main.js toon.js act.js han.js beasts.js tokyo.js pinkset.js critters.js outback.js emuwar.js captions.js index.html; do case $f in main.js) dst=src/main.js;; index.html) dst=index.html;; *) dst=src/core/$f;; esac
+for f in engine.js fx.js main.js toon.js act.js han.js beasts.js tokyo.js pinkset.js critters.js outback.js emuwar.js store.js world.js captions.js index.html; do case $f in main.js) dst=src/main.js;; index.html) dst=index.html;; *) dst=src/core/$f;; esac
   curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/engine/$f" -o "/tmp/ic-$f" 2>/dev/null && grep -q . "/tmp/ic-$f" && cp "/tmp/ic-$f" "$dst" \
     || cp "$HOME/shorts-videos/kit/engine/$f" "$dst" 2>/dev/null || echo "WARNING: engine v3 file $f not found; the old flat look is used"; done
 curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/tools/voice.py" -o tools/voice.py 2>/dev/null && grep -q "blended voices" tools/voice.py \
@@ -613,7 +613,7 @@ curl -fsSL "$R/tools/clone_voice.py" -o tools/clone_voice.py 2>/dev/null && grep
 mkdir -p "$HOME/.faceless-shorts/voice"
 curl -fsSL "$R/voice/narrator.wav" -o "$HOME/.faceless-shorts/voice/narrator.wav" 2>/dev/null || cp "$HOME/shorts-videos/kit/voice/narrator.wav" "$HOME/.faceless-shorts/voice/" 2>/dev/null || echo "WARNING: voice/narrator.wav (reference clip) not found"
 mkdir -p examples
-for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js train-pushers-shots.js pink-cell-shots.js emu-war-shots.js emu-war-script.json emu-sample-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
+for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js train-pushers-shots.js pink-cell-shots.js emu-war-shots.js emu-war-script.json emu-sample-shots.js lottery-clerk-shots.js lottery-clerk-script.json; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
 # voice energizer (WORLD vocoder) for mix.py's "energize"
 PYV="$HOME/.faceless-shorts/venv/bin/python"
 if [ -x "$PYV" ] && ! "$PYV" -c "import pyworld" 2>/dev/null; then
@@ -647,16 +647,22 @@ or music. Example: `examples/emu-war-shots.js` + `examples/emu-war-script.json` 
   breathing, a gesture every 0.8-1.3 s with overshoot) merged with `A.alive()`; add `A.react(type, t, t0)` beats:
   `laugh` (shaking), `angry`, `shock`, `shrug`, `proud`, `sad`, `point`, `cheer`. Animals: `core/critters.js`
   (`Critter` + `drawEmu` with mood, legs stand/walk/run/sit, neck, peck, tilt, bob) keep bobbing and pecking too.
-- **Look:** clean round heads (no hatching unless `hatch: true`), soft grey crescent shade, thick ink, chunkier bean
-  torsos (`bw 106`, `sw 66`), emotional face colour. High-key and pastel-bright: mean value ~0.63, saturation ~0.47
-  (v7 films measured 0.39 / 0.61: too dark and too saturated). Engine grade default is now `sat 1.02, vib 0.22,
-  con 0.1, lift 0.07, gain 1.06, vignette 0.1`, bloom 0.16-0.18 at threshold 0.97 (`GRADE_V6` keeps the old look).
+- **Look (v8.2, re-measured on 10 references):** clean round heads, soft grey crescent shade, thick ink, chunky bean
+  torsos, emotional face colour. Filmic, NOT washed out: mean value ~0.62, darkest 10% ~0.25, ~12% of pixels in deep
+  shade (<0.25), ~18% near-white, saturation ~0.47. Engine default `GRADE_DEFAULT = { sat 0.9, vib 0.12, con 0.24,
+  split 0.38, shadow #2E3A78 (indigo shadows), high #FFD9A0, vignette 0.26, lift 0, gain 0.97 }`, and `sunlight()` now
+  uses less flat ambient (hemi x0.62, `globalThis.AMBIENT` to change) and a brighter key + rim, so objects get a real dark
+  side and cast shadows. The v8 high-key grade (value 0.78, half the frame near-white) is kept as `GRADE_V8` only for
+  reference. Measure every film: sheet every 5 s, tiles -> mean value / p10 / dark share / bright share / saturation.
+  Rich detail: textured floors (planks, tiles), patterned walls, props on every surface, light pools and window light.
 - **No big pop-up text.** Information lives in the world: labelled props, signs, boards, a tally on a wall.
 - **Captions v8:** 1-2 words, white Nunito Black ~74 px, thick black edge, soft shadow, at y 1350, almost static (tiny
   0.06 s pop).
 - **Music v8:** `"music": "steady"` (default): one original mellow 96 BPM groove (muted bass, e-piano, soft marimba,
   brushes, shaker) that never builds, stops or ducks, ~16 dB under the voice. Whooshes on camera swings (`A.autoSwoosh`).
-- **Voice v8:** `tools/clone_voice.py` (Pocket TTS clone of `~/.faceless-shorts/voice/narrator.wav`) now makes the
+- **Voice v8.2:** takes are now chosen for liveliness too (flat pitch range is punished: flat = robotic), and the
+  final narration gets a clean radio polish (high-pass 75 Hz, -3 dB at 280 Hz, +2.5 dB presence at 3.4 kHz, air shelf,
+  gentle 2.6:1 compression); the untouched take is kept as data/narration_raw.wav. `tools/clone_voice.py` (Pocket TTS clone of `~/.faceless-shorts/voice/narrator.wav`) now makes the
   script in ~28-word chunks, picks the best of several takes by Parakeet word check + speaker likeness + pitch, and
   writes `data/narration.wav`, `data/lines.json` and exact word times `data/words.json` itself (no words.py step).
 - Keep `FPS=60`, 2-second segments. Sets: `core/outback.js` (`outback(E, { sunset })` wheat farm, road, fence, gum trees,

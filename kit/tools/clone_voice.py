@@ -130,7 +130,7 @@ def main():
             # Pocket TTS tends to swallow the first word; a leading "..." usually fixes it (alternate both ways)
             y = trim(np.asarray(tts.generate(('... ' + text) if k % 2 == 0 else text, g).samples, dtype=np.float32))
             m, sim, semi, rng, heard, words = score(text, y)
-            q = (1.0 if m >= 0.99 else m - 0.6) * 3 + sim - 0.04 * semi - 0.02 * abs(rng - TARGET_RANGE)
+            q = (1.0 if m >= 0.99 else m - 0.6) * 3 + sim - 0.04 * semi - 0.07 * max(0.0, TARGET_RANGE - rng) - 0.02 * max(0.0, rng - TARGET_RANGE - 1.5)   # v8.2: lively takes win (flat = robotic)
             print(f'   take {k + 1}: words {m:.2f} voice {sim:.3f} pitch {semi:.1f}st range {rng:.1f}st  "{heard[:70]}"', flush=True)
             if best is None or q > best[0]: best = (q, y, m, words)
             if k + 1 >= tries and best[2] >= 0.99: break
@@ -184,7 +184,12 @@ def main():
     out.append(np.zeros(int(float(S.get('outro', 0.6)) * SR)))
     y = np.concatenate(out); y = y / (np.abs(y).max() + 1e-9) * 0.9
     (P / 'data').mkdir(exist_ok=True)
-    wf.write(P / 'data/narration.wav', SR, (y * 32767).astype(np.int16))
+    wf.write(P / 'data/narration_raw.wav', SR, (y * 32767).astype(np.int16))
+    # v8.2 polish: clean, present, radio-style voice (rumble cut, less boxiness, presence + air, gentle compression)
+    import subprocess
+    pol = 'highpass=f=75,equalizer=f=280:t=q:w=1.0:g=-3,equalizer=f=3400:t=q:w=1.2:g=2.5,treble=g=2:f=9000,acompressor=threshold=-21dB:ratio=2.6:attack=6:release=90:makeup=2,alimiter=limit=0.92'
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(P / 'data/narration_raw.wav'), '-af', pol, '-ar', str(SR), '-ac', '1', str(P / 'data/narration.wav')])
+    if r.returncode: wf.write(P / 'data/narration.wav', SR, (y * 32767).astype(np.int16))
     dur = len(y) / SR
     (P / 'data/lines.json').write_text(json.dumps({'duration': round(dur, 3), 'voice': 'clone8:' + Path(ref_path).name, 'speed': speed, 'lines': lines}, indent=1))
     (P / 'data/words.json').write_text(json.dumps(words, indent=0))

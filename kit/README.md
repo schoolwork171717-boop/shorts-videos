@@ -116,3 +116,11 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
 - v8.1: `emuwar.js` props + parliament room, `Flock` crowds, `flush`/`steam` angry faces, `outback(E, { sunset })`,
   and clone_voice.py now cuts the dead air before and after every chunk (near-continuous narration like the reference,
   ~3.8 words/s). Full example: `examples/emu-war-shots.js` (the Friday 2 PM Short).
+
+## v8.2 (after re-measuring 10 reference Shorts)
+- The v8 films were washed out (value 0.78, 50% near-white, 4% shadow vs references 0.62 / 18% / 12%). New
+  `GRADE_DEFAULT` (contrast 0.24, indigo split-tone shadows, vignette 0.26, no lift) and less flat ambient light in
+  `sunlight()` bring both measured films to 0.59-0.63 / 13-19% / 8-13%.
+- Voice: livelier take selection + clean radio polish (see STYLE.md section 0).
+- New sets: `store.js` (corner store with lottery terminal and self-check scanner, office, chalkboard, calendar,
+  big check, bill stack, coin). Example: `examples/lottery-clerk-shots.js`.

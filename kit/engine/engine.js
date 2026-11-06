@@ -72,7 +72,9 @@ const GRADE = {
 
 /** default grade, change per film: STYLE-wide `GRADE_DEFAULT`, per frame `look.grade = { vib, con, split, shadow, high }`, `look.sat` */
 // v8 (matched to the reference channel: mean value ~0.63, shadows ~0.3, saturation ~0.47, no heavy vignette)
-export const GRADE_DEFAULT = { sat: 1.02, vib: 0.22, con: 0.1, split: 0.22, shadow: '#3E5C8E', high: '#FFE4B8', vignette: 0.1, lift: 0.07, gain: 1.06 };
+export const GRADE_V8 = { sat: 1.02, vib: 0.22, con: 0.1, split: 0.22, shadow: '#3E5C8E', high: '#FFE4B8', vignette: 0.1, lift: 0.07, gain: 1.06 };
+// v8.2 (re-measured on 10 reference Shorts: mean value ~0.62, p10 ~0.25, ~12% deep shadow, ~18% near-white; v8 was 0.78 / 0.38 / 4% / 50%: washed out)
+export const GRADE_DEFAULT = { sat: 0.9, vib: 0.12, con: 0.24, split: 0.38, shadow: '#2E3A78', high: '#FFD9A0', vignette: 0.26, lift: 0.0, gain: 0.97 };
 export const GRADE_V6 = { sat: 1.2, vib: 0.5, con: 0.32, split: 0.5, shadow: '#1E4A6E', high: '#FFC878', vignette: 0.32, lift: 0, gain: 1 };
 
 export function makeEngine(canvas, { w = W, h = H, samples = 4, shadowSize = 2048 } = {}) {

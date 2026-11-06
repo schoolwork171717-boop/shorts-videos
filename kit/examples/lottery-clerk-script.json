@@ -1,0 +1,65 @@
+{
+  "title": "The Store Clerk Who Kept Winning the Lottery #shorts",
+  "voice": "clone",
+  "speed": 1.12,
+  "tries": 7,
+  "lead": 0.12,
+  "gap": 0.05,
+  "outro": 1.2,
+  "music": "steady",
+  "lines": [
+    {
+      "text": "An old man's lottery ticket won a quarter of a million dollars, and the store clerk told him it won a free ticket."
+    },
+    {
+      "text": "He'd played the lottery for years. When the clerk checked his ticket, the machine jingled twice."
+    },
+    {
+      "text": "She smiled, handed him a free ticket, and kept the real one."
+    },
+    {
+      "text": "A few days later, he opened the local paper. The big winner? The clerk from his store."
+    },
+    {
+      "text": "So he complained to the lottery company. They fought him instead."
+    },
+    {
+      "text": "He had to take them to court, and it dragged on for years."
+    },
+    {
+      "text": "Then, on the day the trial was supposed to start, they suddenly settled, and made him promise not to talk about it."
+    },
+    {
+      "text": "But a TV news team got curious. If one clerk did this, how many others had?"
+    },
+    {
+      "text": "They asked a math professor to check the numbers."
+    },
+    {
+      "text": "Store workers had won over two hundred big prizes. By luck alone, it should have been about sixty."
+    },
+    {
+      "text": "You see, clerks don't buy way more tickets than everybody else, so they shouldn't win way more either."
+    },
+    {
+      "text": "It's like a friend who wins every coin toss, but he's also the one who flips the coin and tells you how it landed."
+    },
+    {
+      "text": "The odds of that being luck were about one in a trillion trillion trillion trillion."
+    },
+    {
+      "text": "Now you can scan your own ticket, and the screen faces you."
+    },
+    {
+      "text": "And the lottery company? It spent three times more on lawyers fighting the old man than it ever paid him."
+    }
+  ],
+  "sources": [
+    "Ontario Ombudsman, 'A Game of Trust' backgrounder (2007): July 2001, Bob Edmonds checks his tickets in the Coboconk variety store, hears the machine jingle twice but receives only a free ticket; the clerk and her husband claim the prize; Edmonds reads about the win in the local paper; OLG settles with Edmonds for $200,000",
+    "Ontario Ombudsman, 'A Game of Trust' fact sheet: Bob Edmonds case: $200,000 in settlement; $629,600 in legal costs; Seven-Point Plan with $10 million for ticket checkers; 247 major insider wins since 1999",
+    "Tampa Bay Times / AP (2007): the OLG settled with Edmonds the day his trial was to begin in 2005, paying him $200,000",
+    "Wikipedia, 'Bob Edmonds': the $250,000 ticket; 2005 out-of-court settlement with a non-disclosure agreement; the fifth estate expose of October 2006",
+    "Globe and Mail via probability.ca, 'Lottery insiders win big bucks': more than 200 insiders won prizes of $50,000 or more since 1999; fewer than 60 should have by chance (statistician Jeffrey Rosenthal); odds of one in a trillion trillion trillion trillion (Wikipedia, OLG)",
+    "CBC the fifth estate update (2006): OLG plans electronic devices at every location so players can check their own tickets, larger win text on screens, and signed tickets"
+  ]
+}
