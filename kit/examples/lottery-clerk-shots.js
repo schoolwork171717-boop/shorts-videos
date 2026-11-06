@@ -53,7 +53,7 @@ export function buildShots(E) {
   const SHOP = ST.cornerStore(E);
   const LOT = ST.office(E, { sign: 'LOTTERY CORP.' });
   const UNI = ST.office(E, { sign: 'UNIVERSITY', wall: '#E8E0F4' });
-  const COURT = EW.parliament(E, { sign: 'COURT', carpet: '#A8583E', leather: '#8A3A3A', wall: '#F4E6CC' });
+  const COURT = EW.parliament(E, { sign: 'COURT', carpet: '#A8583E', leather: '#8A3A3A', wall: '#DCE4F0' });
   const paper = EW.newspaper(['CLERK', 'WINS', '$250,000']); SHOP.scene.add(paper);
   const cal = ST.calendar(); cal.position.set(-2.1, 2.05, -2.2); COURT.scene.add(cal);
   const check = ST.bigCheck('$200,000', 'PAY TO: THE OLD MAN'); COURT.scene.add(check);

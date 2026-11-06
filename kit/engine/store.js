@@ -29,7 +29,7 @@ export function cornerStore(E) {
   scene.environment = E.envMap; scene.environmentIntensity = 0.55;
   const sun = sunlight(scene, E, { col: '#FFF4E0', i: 2.3, pos: [-6, 8, 6], target: [0, 0.8, -1], box: 12, sky: '#FFF8EC', ground: '#E8C8A0', hemi: 2.1 });
   // checkerboard floor, mint walls, a sunny window and the front door
-  const fT = canvasTex('storefloor', 256, 256, (c, W, H) => { for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { c.fillStyle = (x + y) % 2 ? '#F4EEE2' : '#E4A26A'; c.fillRect(x * 32, y * 32, 32, 32); } }, [6, 6]);
+  const fT = canvasTex('storefloor', 256, 256, (c, W, H) => { for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { c.fillStyle = (x + y) % 2 ? '#F4EEE2' : '#6FAFC4'; c.fillRect(x * 32, y * 32, 32, 32); } }, [6, 6]);
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), mat({ map: fT, roughness: 0.6 })); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; scene.add(fl);
   const wall = mat({ color: '#BFE6D4', roughness: 0.9 }), trim = mat({ color: '#F4EBD6' }), wood = mat({ color: '#B07A48', roughness: 0.7 }), red = mat({ color: '#D8443C', roughness: 0.5 });
   box(14, 4.2, 0.2, wall, 0, 2.1, -3.4, scene); box(0.2, 4.2, 14, wall, -4.2, 2.1, 0, scene); box(0.2, 4.2, 14, wall, 4.4, 2.1, 0, scene);
@@ -64,8 +64,8 @@ export function cornerStore(E) {
   return { scene, sun, terminal: { group: terminal, pivot, setScreen: scr.draw }, checker: { group: checker, setScreen: cs.draw }, counter: { z: -1.0, top: 1.03 } };
 }
 
-export function office(E, { sign = 'LOTTERY CORP.', wall: wallCol = '#F4E2C0' } = {}) {
-  const scene = new THREE.Scene(); scene.background = new THREE.Color('#F4E2C0');
+export function office(E, { sign = 'LOTTERY CORP.', wall: wallCol = '#D6E4F2' } = {}) {
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(wallCol);
   scene.environment = E.envMap; scene.environmentIntensity = 0.55;
   const sun = sunlight(scene, E, { col: '#FFF2DC', i: 2.4, pos: [-5, 8, 7], target: [0, 0.8, -1], box: 12, sky: '#FFF6E8', ground: '#C8A070', hemi: 2.0 });
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), mat({ color: '#3E7AA8', roughness: 1 })); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; scene.add(fl);
