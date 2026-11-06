@@ -24,7 +24,7 @@ HOME = Path(os.environ.get('FACELESS_HOME', Path.home() / '.faceless-shorts'))
 MD = HOME / 'clone'
 REL = 'https://github.com/k2-fsa/sherpa-onnx/releases/download/'
 MODELS = {
-    'pocket': ('tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2', 'sherpa-onnx-pocket-tts-int8-2026-01-26'),
+    'pocket': ('tts-models/sherpa-onnx-pocket-tts-2026-01-26.tar.bz2', 'sherpa-onnx-pocket-tts-2026-01-26'),   # v8.3: full-precision model (int8 sounded buzzier, less like the narrator)
     'asr': ('asr-models/sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8.tar.bz2', 'sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8'),
     'spk': ('speaker-recongition-models/wespeaker_en_voxceleb_resnet34.onnx', 'wespeaker_en_voxceleb_resnet34.onnx'),
 }
@@ -87,8 +87,8 @@ def main():
     speed = float(S.get('speed', 1.12)); tries = int(S.get('tries', 5))
     D = MD / MODELS['pocket'][1]
     tts = so.OfflineTts(so.OfflineTtsConfig(model=so.OfflineTtsModelConfig(pocket=so.OfflineTtsPocketModelConfig(
-        lm_flow=str(D / 'lm_flow.int8.onnx'), lm_main=str(D / 'lm_main.int8.onnx'), encoder=str(D / 'encoder.onnx'),
-        decoder=str(D / 'decoder.int8.onnx'), text_conditioner=str(D / 'text_conditioner.onnx'), vocab_json=str(D / 'vocab.json'),
+        lm_flow=str(D / 'lm_flow.onnx'), lm_main=str(D / 'lm_main.onnx'), encoder=str(D / 'encoder.onnx'),
+        decoder=str(D / 'decoder.onnx'), text_conditioner=str(D / 'text_conditioner.onnx'), vocab_json=str(D / 'vocab.json'),
         token_scores_json=str(D / 'token_scores.json')), num_threads=2)))
     A = MD / MODELS['asr'][1]
     asr = so.OfflineRecognizer.from_nemo_ctc(model=str(A / 'model.int8.onnx'), tokens=str(A / 'tokens.txt'), num_threads=2)

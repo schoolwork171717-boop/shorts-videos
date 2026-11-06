@@ -39,7 +39,26 @@ const GRAD = (() => { const d = new Uint8Array([120, 120, 120, 255, 175, 175, 17
 const TOON = new WeakMap();
 const toonOf = (m) => { if (!m || !m.isMeshStandardMaterial || m.userData.keepPBR) return m; if (TOON.has(m)) return TOON.get(m);
   const t = new THREE.MeshToonMaterial({ color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap, emissiveIntensity: m.emissiveIntensity, transparent: m.transparent, opacity: m.opacity, side: m.side, alphaTest: m.alphaTest, alphaMap: m.alphaMap, fog: m.fog, gradientMap: GRAD, depthWrite: m.depthWrite });
+  if (!m.userData.noGrain) addGrain(t);
   TOON.set(m, t); return t; };
+// v8.3: painterly surface grain. The reference films never have a flat, untextured surface (block texture ~0.03 vs our
+// 0.009): every toon surface gets soft world-space mottling (3 octaves of value noise, ±GRAIN.k). ?grain=0 turns it off.
+export const GRAIN = { k: 0.1, on: true };
+const GN = `varying vec3 vWPg; uniform float uGrainK;
+  float gh(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+  float gn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(gh(i), gh(i + vec3(1,0,0)), f.x), mix(gh(i + vec3(0,1,0)), gh(i + vec3(1,1,0)), f.x), f.y),
+               mix(mix(gh(i + vec3(0,0,1)), gh(i + vec3(1,0,1)), f.x), mix(gh(i + vec3(0,1,1)), gh(i + vec3(1,1,1)), f.x), f.y), f.z); }`;
+function addGrain(t) {
+  t.onBeforeCompile = (sh) => {
+    sh.uniforms.uGrainK = { value: GRAIN.on ? GRAIN.k : 0 };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPg;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\n vWPg = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;\n#else\n vWPg = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#endif');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GN)
+      .replace('#include <map_fragment>', '#include <map_fragment>\n{ float g = gn(vWPg * 1.7) * 0.55 + gn(vWPg * 6.3) * 0.3 + gn(vWPg * 21.0) * 0.15; diffuseColor.rgb *= (1.0 - uGrainK) + 2.0 * uGrainK * g; }');
+  };
+  t.customProgramCacheKey = () => 'grain83';
+}
 export function celify(scene) { scene.traverse((o) => { if (!o.isMesh || o.userData.noCel) return; o.material = Array.isArray(o.material) ? o.material.map(toonOf) : toonOf(o.material); }); }
 
 export const W = 1080, H = 1920;
@@ -48,7 +67,7 @@ export const STYLE = { ink: true, cel: true, inkStrength: 0.9 };
 /** render quality from the URL: ?res=0.6 renders 3D at 60% size (upscaled), ?aa=0 turns MSAA off, ?shadow=1024 */
 const Q = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 export const RES = +(Q.get('res') || 1), AA = +(Q.get('aa') ?? 4), SHADOW = +(Q.get('shadow') || 2048);
-if (Q.get('ink') === '0') STYLE.ink = false; if (Q.get('cel') === '0') STYLE.cel = false;
+if (Q.get('ink') === '0') STYLE.ink = false; if (Q.get('grain') === '0') GRAIN.on = false; if (Q.get('cel') === '0') STYLE.cel = false;
 // the colour grade ("majestic"): vibrance lifts dull colours most, an S-curve adds punch, split toning pushes shadows
 // toward violet-blue and coloured highlights toward gold (near-white cut-out faces are left white), soft vignette, grain.
 const GRADE = {

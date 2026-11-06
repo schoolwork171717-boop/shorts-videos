@@ -35,7 +35,7 @@ export function buildShots(E) {
   const cam = camera(42);
   const LK = { bloom: 0.16, bloomThreshold: 0.97, aperture: 0.0004, maxblur: 0.004 };
   const shoot = (scene, c, look = LK, t = NOW) => {
-    cam.fov = c.fov; cam.position.set(...c.pos);
+    cam.fov = c.fov; cam.position.set(...c.pos); if (c.fov >= 38 && c.fov <= 44 && !c.noClose) cam.position.lerp(V3(...c.look), 0.14);   // v8.3: closer, like the references
     cam.position.add(V3(Math.sin(t * 0.9) * 0.03, Math.sin(t * 1.3 + 1) * 0.025, Math.sin(t * 0.7 + 2) * 0.025));
     cam.lookAt(V3(...c.look)); cam.rotateZ(Math.sin(t * 0.6 + 0.5) * 0.008); cam.updateProjectionMatrix();
     all.forEach((q) => q.face(cam)); E.render(scene, cam, { ...look, focus: cam.position.distanceTo(V3(...c.look)), t });
@@ -108,8 +108,8 @@ export function buildShots(E) {
       paper.visible = true; paper.position.set(-2.6, lerp(1.32, 0.9, drop), 1.55); paper.rotation.set(lerp(-0.05, -0.5, drop), 0.35, Math.sin(t * 8) * 0.02);
       act(clerk, 0.5, -1.75, { mood: 'happy', armR: [150 + Math.sin(t * 9) * 20, -20], ...A.react('cheer', t, cl + 0.2, 0.6) });
       const c = A.camPath(t, [
-        [st, [-2.0, 1.45, 4.3], [-2.55, 1.3, 1.4], 40],
-        [cl - 0.1, [-1.9, 1.55, 4.4], [-2.4, 1.4, 1.2], 40],
+        [st, [-2.0, 1.45, 4.3], [-2.55, 1.3, 1.4], 45],
+        [cl - 0.1, [-1.9, 1.55, 4.4], [-2.4, 1.4, 1.2], 45],
         [end, [-1.6, 1.6, 3.8], [-1.6, 1.4, 0.4], 44],
       ]);
       shoot(SHOP.scene, c); blit();

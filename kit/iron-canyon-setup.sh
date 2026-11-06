@@ -673,6 +673,17 @@ or music. Example: `examples/emu-war-shots.js` + `examples/emu-war-script.json` 
 - The full reference film is `examples/emu-war-shots.js` (62 s, 10 long shots); `examples/emu-sample-shots.js` is the
   10 s sample.
 
+### v8.3 (Nov 6, after measuring 4 more reference Shorts against our own films)
+- Measured (mean value / near-white share / warm share / cool share / flat-surface texture): references 0.60-0.67 /
+  11-25% / 33-39% / 37-52% / 0.025-0.031; our v8.1 films 0.76-0.79 / 48-53% / 61-72% / 11-16% / 0.009-0.031. So: darker,
+  cooler, more textured. The v8.2 grade fixes value; keep sets cool-balanced (blue skies, teal/blue walls and floors,
+  indigo shade, warm only for lamps, skin of the sets' key light and accents) - never a mostly-yellow frame.
+- Every surface gets painterly grain automatically (engine `GRAIN`, world-space value noise, ?grain=0 to switch off).
+- Frame closer: faces fill about a quarter of the frame width in talking beats (shoot() pulls 38-44° cameras 14%
+  toward the look point); wides only for reveals.
+- Voice: the full-precision Pocket TTS model (int8 was buzzier and less like the narrator: speaker likeness 0.89-0.90
+  vs 0.84-0.88, less breathy noise), lively takes preferred, then the clean radio polish.
+
 ## 1. Rules
 - **People are 2D, the world is 3D.** Every person is a `Toon` cut-out that faces the camera and casts a real shadow.
 - **One crew, one look each, all video.** One work hat (`railcap`, `workcap`, `bowler`, `cowboy`, `cap`) + one of:

@@ -124,3 +124,8 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
 - Voice: livelier take selection + clean radio polish (see STYLE.md section 0).
 - New sets: `store.js` (corner store with lottery terminal and self-check scanner, office, chalkboard, calendar,
   big check, bill stack, coin). Example: `examples/lottery-clerk-shots.js`.
+
+## v8.3 (darker, cooler, textured, closer; cleaner voice)
+- Engine: painterly world-space grain on every toon surface (`GRAIN.k` 0.1; `?grain=0` off).
+- Shots: talking-beat cameras (fov 38-44) are pulled 14% closer; keep sets cool-balanced (see STYLE.md v8.3).
+- Voice: clone_voice.py uses the full-precision Pocket TTS model (`sherpa-onnx-pocket-tts-2026-01-26`, ~170 MB).
