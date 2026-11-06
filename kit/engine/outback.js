@@ -1,6 +1,6 @@
 // outback.js (kit v8): a bright, high-key farm in the Australian outback: golden wheat, a dirt road, a fence, gum trees,
 // low purple hills, puffy clouds and a 1930s army truck with a machine gun on the back.
-//   outback(E) -> { scene, sun, truck (Group: drive along +x; truck.wheels spin with .roll(dist)), gun, update(t, { truckX }) }
+//   outback(E, { sunset, truckOn }) -> { scene, sun, truck (Group: drive along +x; truck.wheels spin with .roll(dist)), gun, update(t, { truckX }) }
 //   road along x at z 0..2.6 (people on the road stand at z ~1), wheat field at z < -0.5 and z > 3.6
 //   the truck's flatbed top is y = 1.15 (stand soldiers on it at local x -1.9..-0.4, z 0)
 import * as THREE from 'three';
@@ -37,11 +37,13 @@ export function armyTruck() {
   return g;
 }
 
-export function outback(E) {
+export function outback(E, { sunset = false, truckOn = true } = {}) {
   const scene = new THREE.Scene();
-  majSky(scene, { top: '#2F7FD8', mid: '#7CC0F0', horizon: '#FFF0D0', sunCol: '#FFF6DA', sunDir: [0.45, 0.55, -1], glow: 0.5 });
-  const sun = sunlight(scene, E, { col: '#FFF2DC', i: 3.0, pos: [7, 13, 9], target: [0, 0.5, 0], box: 18, sky: '#C6DCFF', ground: '#D8B070', hemi: 1.7 });
-  scene.fog = new THREE.Fog('#DCEBFA', 70, 300);
+  if (sunset) majSky(scene, { top: '#5A6FD0', mid: '#F0A0B8', horizon: '#FFD08A', sunCol: '#FFE6A8', sunDir: [0.3, 0.12, -1], glow: 0.8 });
+  else majSky(scene, { top: '#2F7FD8', mid: '#7CC0F0', horizon: '#FFF0D0', sunCol: '#FFF6DA', sunDir: [0.45, 0.55, -1], glow: 0.5 });
+  const sun = sunset ? sunlight(scene, E, { col: '#FFD6A0', i: 2.7, pos: [5, 6, -8], target: [0, 0.5, 0], box: 18, sky: '#C8B8F0', ground: '#E0A070', hemi: 1.8 })
+    : sunlight(scene, E, { col: '#FFF2DC', i: 3.0, pos: [7, 13, 9], target: [0, 0.5, 0], box: 18, sky: '#C6DCFF', ground: '#D8B070', hemi: 1.7 });
+  scene.fog = new THREE.Fog(sunset ? '#F4C8B8' : '#DCEBFA', 70, 300);
   // golden wheat ground + a dusty road
   const wT = canvasTex('wheat', 512, 512, (c, W, H) => { c.fillStyle = '#E2B84E'; c.fillRect(0, 0, W, H);
     for (let y = 0; y < H; y += 8) { c.fillStyle = (y / 8) % 2 ? 'rgba(255,230,140,0.5)' : 'rgba(170,120,40,0.35)'; c.fillRect(0, y, W, 4); }
@@ -69,6 +71,6 @@ export function outback(E) {
     for (let k = 0; k < 5; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(6 + rnd(i * 5 + k) * 6, 14, 10), cm); b.position.set((k - 2) * 7, rnd(i + k) * 4, 0); b.scale.y = 0.75; b.castShadow = false; cl.add(b); } }
   const sign = signBoard('WHEAT FARM', { w: 2.2, h: 0.6, bg: '#F4EBD0', fg: '#7A3A22', font: 'Inter' }); sign.position.set(-6, 1.35, -0.25); scene.add(sign);
   cyl(0.05, 0.05, 1.1, fm, -6.9, 0.55, -0.32, scene, 6); cyl(0.05, 0.05, 1.1, fm, -5.1, 0.55, -0.32, scene, 6);
-  const truck = armyTruck(); truck.position.set(0, 0, 1.3); scene.add(truck);
+  const truck = armyTruck(); truck.position.set(0, 0, 1.3); if (truckOn) scene.add(truck);
   return { scene, sun, truck, update: (t, { truckX = 0 } = {}) => { truck.position.x = truckX; truck.roll(truckX); } };
 }

@@ -129,6 +129,8 @@ export function drawToon(g, look = {}, st = {}) {
   const head = new Path2D(); head.ellipse(hx, hy, r, r * 0.97, 0, 0, Math.PI * 2);
   g.fillStyle = L.head; g.fill(head);
   g.save(); g.clip(head);
+  if (S.flush) { g.globalAlpha = Math.min(1, S.flush) * 0.85; const fg = g.createLinearGradient(0, hy - r, 0, hy + r);   // v8: angry red / sick green face, rising from the chin
+    fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(0.35, S.flushCol || '#F0604E'); fg.addColorStop(1, S.flushCol || '#E0483C'); g.fillStyle = fg; g.fill(head); g.globalAlpha = 1; }
   // crescent shade on the lower right + light pencil hatching inside it (the hand-inked look)
   const cres = new Path2D(); cres.arc(hx + 40, hy + 34, r * 1.02, 0, Math.PI * 2); cres.rect(hx - 400, hy - 400, 800, 800);
   g.fillStyle = L.headShade || '#DCDCE4'; g.fill(cres, 'evenodd');
@@ -137,6 +139,9 @@ export function drawToon(g, look = {}, st = {}) {
     g.restore(); }
   g.restore();
   g.strokeStyle = INK; g.lineWidth = LW + 1; g.stroke(head);
+  if (S.steam) { const k = Math.min(1, S.steam), ph = S.steamT || 0;                                                   // v8: steam puffs from both sides of the head
+    [-1, 1].forEach((sd) => { for (let j = 0; j < 3; j++) { const u = ((ph * 1.6 + j / 3) % 1), px = hx + sd * (r + 10 + u * 70), py = hy - 10 - u * 120, pr = (18 + u * 26) * k;
+      g.globalAlpha = (1 - u) * k; g.fillStyle = '#FFFFFF'; g.strokeStyle = INK; g.lineWidth = 5; g.beginPath(); g.arc(px, py, pr, 0, 7); g.fill(); g.stroke(); } }); g.globalAlpha = 1; }
   if (L.hair) drawHair(g, L, hx, hy, r);
   drawFace(g, L, S, hx, hy);
   if (L.extra.includes('beard')) drawBeard(g, L, S, hx, hy, r);
@@ -503,7 +508,7 @@ function bill(g, x, y, rot) {
 
 // ---------- the 3D cut-out ----------
 let shadowTex = null;
-function blobTex() {
+export function blobTex() {
   if (shadowTex) return shadowTex;
   const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
   const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(30,20,40,0.75)'); gr.addColorStop(0.6, 'rgba(30,20,40,0.25)'); gr.addColorStop(1, 'rgba(30,20,40,0)');

@@ -113,3 +113,6 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
   Example: `examples/emu-war-shots.js` / `emu-war-script.json`.
 - The user's exact Gemini narrator: Zapier "Google AI Studio (Gemini)" generate_audio works once that app is connected;
   until then the Pocket clone is used.
+- v8.1: `emuwar.js` props + parliament room, `Flock` crowds, `flush`/`steam` angry faces, `outback(E, { sunset })`,
+  and clone_voice.py now cuts the dead air before and after every chunk (near-continuous narration like the reference,
+  ~3.8 words/s). Full example: `examples/emu-war-shots.js` (the Friday 2 PM Short).

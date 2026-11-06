@@ -171,6 +171,10 @@ def main():
         else:
             x, hw = take(text); wf.write(cw, SR, (np.clip(x, -1, 1) * 32767).astype(np.int16)); cj.write_text(json.dumps({'text': text, 'words': hw}))
         al = align(g, hw, len(x) / SR)
+        # v8.1: cut the dead air the "..." prefix leaves before the first script word and after the last one
+        cut = max(0.0, al[0][2] - 0.07); tail = min(len(x) / SR, al[-1][2] + 0.8, max(al[-1][3] + 0.25, al[-1][2] + 0.45))
+        if cut > 0.02 or tail < len(x) / SR - 0.02:
+            x = x[int(cut * SR): int(tail * SR)]; al = [(li, w, max(0.0, s - cut), max(0.05, e - cut)) for li, w, s, e in al]
         for li in g:
             ws = [a for a in al if a[0] == li]
             lines[li] = {'i': li, 'text': S['lines'][li]['text'], 'start': round(t + max(0, ws[0][2] - 0.04), 3), 'end': round(t + ws[-1][3], 3)}

@@ -2,7 +2,8 @@
 //   new Critter(drawEmu, look, { height })  ->  .set(st) each frame, .face(cam), .group, like a Toon
 //   drawEmu(g, look, st): a big fluffy emu. st = { mood: 'neutral'|'smug'|'sly'|'shock'|'happy'|'angry', look: [dx, dy],
 //        blink, legs: 'stand'|'run'|'walk'|'sit', phase, neck (−1..1 bend), peck (0..1), tilt°, bob, lean°, flip }
-import { Toon, INK } from './toon.js';
+import * as THREE from 'three';
+import { Toon, INK, blobTex } from './toon.js';
 
 const R2D = Math.PI / 180;
 export class Critter extends Toon {
@@ -80,4 +81,33 @@ export function drawEmu(g, look = {}, st = {}) {
   g.stroke();
   g.restore();
   g.restore();
+}
+
+/** A big flock for crowd shots: run / walk / peck cycles are drawn once into a few textures and shared, so 40-120
+ *  birds cost almost nothing. flock.bird(i, x, z, { mode: 'run'|'walk'|'stand'|'peck', phase, flip, y }) each frame,
+ *  flock.face(cam), flock.hide(). Add flock.group to the scene. */
+export class Flock {
+  constructor(n, { height = 1.75, res = 0.5, bodies = ['#6B4A33', '#5E432E', '#73503A'], draw = drawEmu } = {}) {
+    const H = height / 0.96, Wd = H / 2; this.n = n; this.group = new THREE.Group();
+    const geo = new THREE.PlaneGeometry(Wd, H); geo.translate(0, H / 2 - H * (24 / 1024), 0);
+    const bake = (look, st) => { const c = document.createElement('canvas'); c.width = 512 * res; c.height = 1024 * res; const g = c.getContext('2d'); g.scale(res, res); draw(g, look, st);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return new THREE.MeshBasicMaterial({ map: t, transparent: true, alphaTest: 0.04, side: THREE.DoubleSide, toneMapped: false }); };
+    this.mats = bodies.map((body) => ({
+      run: [...Array(8)].map((_, k) => bake({ body }, { legs: 'run', phase: (k / 8) * Math.PI * 2, neck: 0.3 })),
+      walk: [...Array(8)].map((_, k) => bake({ body }, { legs: 'walk', phase: (k / 8) * Math.PI * 2, neck: 0.1 })),
+      stand: [0, 1, 2, 3].map((k) => bake({ body }, { neck: [-0.2, 0.1, 0.3, 0][k], tilt: [6, -8, 0, 12][k], look: [[0.5, 0], [-0.4, 0.2], [0, 0], [0.6, -0.2]][k] })),
+      peck: [0, 0.35, 0.7, 1].map((p) => bake({ body }, { peck: p, neck: 0.2 })),
+    }));
+    const blobM = new THREE.MeshBasicMaterial({ map: blobTex(), transparent: true, depthWrite: false, opacity: 0.5 });
+    this.birds = [...Array(n)].map((_, i) => { const g = new THREE.Group(), pv = new THREE.Group(), m = new THREE.Mesh(geo, this.mats[i % bodies.length].stand[0]);
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(Wd * 0.9, Wd * 0.34), blobM); b.rotation.x = -Math.PI / 2; b.position.y = 0.012;
+      pv.add(m); g.add(pv, b); this.group.add(g); return { g, pv, m, set: this.mats[i % bodies.length] }; });
+  }
+  bird(i, x, z, { mode = 'stand', phase = 0, flip = false, y = 0, s = 1 } = {}) {
+    const B = this.birds[i]; if (!B) return; B.g.visible = true; B.g.position.set(x, y, z); B.g.scale.setScalar(s);
+    const list = B.set[mode] || B.set.stand; const k = mode === 'run' || mode === 'walk' ? Math.floor(((phase / (Math.PI * 2)) % 1 + 1) % 1 * 8) % 8 : Math.floor(Math.abs(phase)) % list.length;
+    B.m.material = list[k]; B.m.scale.x = flip ? -1 : 1;
+  }
+  hide() { this.birds.forEach((B) => (B.g.visible = false)); }
+  face(cam) { const p = new THREE.Vector3(); this.birds.forEach((B) => { if (!B.g.visible) return; B.g.getWorldPosition(p); B.pv.rotation.y = Math.atan2(cam.position.x - p.x, cam.position.z - p.z); }); }
 }

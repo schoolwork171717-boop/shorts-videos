@@ -5,23 +5,31 @@
   "tries": 5,
   "lead": 0.12,
   "gap": 0.05,
-  "outro": 1.5,
+  "outro": 1.2,
   "music": "steady",
   "lines": [
-    {
-      "text": "An army rolled out machine guns to fight a bunch of birds."
-    },
-    {
-      "text": "The general said it would take a week, tops."
-    },
-    {
-      "text": "A month later, the birds were winning,"
-    },
-    {
-      "text": "and nobody could figure out why."
-    }
+    { "text": "An army rolled out machine guns to fight a bunch of birds." },
+    { "text": "Farmers out west were furious. Twenty thousand emus were stomping through their wheat and eating everything." },
+    { "text": "So the army sent a major, two soldiers, two machine guns, and crates and crates of bullets." },
+    { "text": "Everyone figured this would be easy. They're birds. How hard can it be?" },
+    { "text": "Then the first flock showed up, and the soldiers opened fire." },
+    { "text": "The emus scattered in every direction, like somebody kicked a bag of marbles." },
+    { "text": "So they set up an ambush by a water hole. A thousand emus came strolling right toward them." },
+    { "text": "And the gun jammed." },
+    { "text": "Fine. They tied a machine gun to a truck and chased them." },
+    { "text": "But the emus ran faster than the truck, and the ride was so bumpy the gunner couldn't even aim." },
+    { "text": "Newspapers made fun of them. Lawmakers asked if the soldiers would get medals for surviving." },
+    { "text": "You see, emus don't march in a line like an army. Every flock had a tall lookout, and the moment anything went bang, they split up." },
+    { "text": "It's like trying to swat a hundred flies with one rolled up newspaper." },
+    { "text": "The major even admitted these birds could take bullets like tanks." },
+    { "text": "After about five weeks, the army packed up and went home." },
+    { "text": "Thousands of bullets later, the emus were still eating the wheat." },
+    { "text": "And the major's official report proudly said his men suffered no casualties." }
   ],
   "sources": [
-    "Wikipedia, 'Emu War': in late 1932 Australian soldiers with Lewis machine guns were sent to cull emus damaging wheat in Western Australia; the first attempt (from 2 November) was withdrawn on 8 November, a second ran from 13 November to 10 December with poor results; the emus scattered into small groups and outran the trucks"
+    "Wikipedia, 'Emu War': late 1932, Campion district, Western Australia; Major G.P.W. Meredith with Sergeant McMurray and Gunner O'Halloran, two Lewis guns and 10,000 rounds; about 20,000 emus damaging wheat; the first flock scattered; an ambush at a dam with about 1,000 emus ended when the gun jammed; a gun mounted on a truck could not keep up and the ride was too rough to fire; each flock had a tall lookout; troops withdrawn 8 November, second attempt 13 November to 10 December (986 confirmed kills with 9,860 rounds); the official report noted no casualties among the men; Meredith said the birds could face machine guns 'with the invulnerability of tanks'",
+    "Mental Floss, 'When Australia Went to War With Its Emus': 2,500 rounds by 8 November for as few as 50 birds; press ridicule; Pearce ended the first operation",
+    "Canada Bay Heritage Society, 'Australia's Emu War': the House of Representatives asked whether medals would be awarded to survivors of the campaign",
+    "Australian Geographic, 'Looking back: Australia's Emu Wars': recalled within a week of first contact; no casualties among the men"
   ]
 }

@@ -600,7 +600,7 @@ MIXURL=https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/mai
 if curl -fsSL "$MIXURL" -o /tmp/ic-mix.py 2>/dev/null && grep -q music_dry /tmp/ic-mix.py; then cp /tmp/ic-mix.py tools/mix.py
 elif [ -f "$HOME/shorts-videos/kit/mix.py" ]; then cp "$HOME/shorts-videos/kit/mix.py" tools/mix.py
 else echo "WARNING: Iron Canyon mixer (dry/quirk music + voice polish) not found; using the default mixer"; fi
-for f in engine.js fx.js main.js toon.js act.js han.js beasts.js tokyo.js pinkset.js critters.js outback.js captions.js index.html; do case $f in main.js) dst=src/main.js;; index.html) dst=index.html;; *) dst=src/core/$f;; esac
+for f in engine.js fx.js main.js toon.js act.js han.js beasts.js tokyo.js pinkset.js critters.js outback.js emuwar.js captions.js index.html; do case $f in main.js) dst=src/main.js;; index.html) dst=index.html;; *) dst=src/core/$f;; esac
   curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/engine/$f" -o "/tmp/ic-$f" 2>/dev/null && grep -q . "/tmp/ic-$f" && cp "/tmp/ic-$f" "$dst" \
     || cp "$HOME/shorts-videos/kit/engine/$f" "$dst" 2>/dev/null || echo "WARNING: engine v3 file $f not found; the old flat look is used"; done
 curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/tools/voice.py" -o tools/voice.py 2>/dev/null && grep -q "blended voices" tools/voice.py \
@@ -613,7 +613,7 @@ curl -fsSL "$R/tools/clone_voice.py" -o tools/clone_voice.py 2>/dev/null && grep
 mkdir -p "$HOME/.faceless-shorts/voice"
 curl -fsSL "$R/voice/narrator.wav" -o "$HOME/.faceless-shorts/voice/narrator.wav" 2>/dev/null || cp "$HOME/shorts-videos/kit/voice/narrator.wav" "$HOME/.faceless-shorts/voice/" 2>/dev/null || echo "WARNING: voice/narrator.wav (reference clip) not found"
 mkdir -p examples
-for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js train-pushers-shots.js pink-cell-shots.js emu-war-shots.js emu-war-script.json; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
+for f in sun-kink-shots.js quick-draw-shots.js cave-shots.js jar-shots.js train-pushers-shots.js pink-cell-shots.js emu-war-shots.js emu-war-script.json emu-sample-shots.js; do curl -fsSL "https://raw.githubusercontent.com/schoolwork171717-boop/shorts-videos/main/kit/examples/$f" -o "examples/$f" 2>/dev/null || cp "$HOME/shorts-videos/kit/examples/$f" "examples/$f" 2>/dev/null || true; done
 # voice energizer (WORLD vocoder) for mix.py's "energize"
 PYV="$HOME/.faceless-shorts/venv/bin/python"
 if [ -x "$PYV" ] && ! "$PYV" -c "import pyworld" 2>/dev/null; then
@@ -659,8 +659,13 @@ or music. Example: `examples/emu-war-shots.js` + `examples/emu-war-script.json` 
 - **Voice v8:** `tools/clone_voice.py` (Pocket TTS clone of `~/.faceless-shorts/voice/narrator.wav`) now makes the
   script in ~28-word chunks, picks the best of several takes by Parakeet word check + speaker likeness + pitch, and
   writes `data/narration.wav`, `data/lines.json` and exact word times `data/words.json` itself (no words.py step).
-- Keep `FPS=60`, 2-second segments. Sets: `core/outback.js` (`outback(E)` wheat farm, road, fence, gum trees, army truck
-  with turning gun, `update(t, { truckX })`), plus canyon, tokyo, pinkset, han.
+- Keep `FPS=60`, 2-second segments. Sets: `core/outback.js` (`outback(E, { sunset })` wheat farm, road, fence, gum trees,
+  army truck with turning gun, `update(t, { truckX })`), `core/emuwar.js` (waterHole, ammoCrate(label), hayBale,
+  newspaper(headline), report(lines), medal, puff smoke, a bright parliament room), plus canyon, tokyo, pinkset, han.
+- Crowds: `new Flock(n)` (critters.js) pre-draws run/walk/peck/stand frames once, so 40-120 animals cost almost nothing;
+  `flock.bird(i, x, z, { mode, phase, flip })` each frame. Angry faces: `flush: 0..1` (red face) and `steam: 1`.
+- The full reference film is `examples/emu-war-shots.js` (62 s, 10 long shots); `examples/emu-sample-shots.js` is the
+  10 s sample.
 
 ## 1. Rules
 - **People are 2D, the world is 3D.** Every person is a `Toon` cut-out that faces the camera and casts a real shadow.
