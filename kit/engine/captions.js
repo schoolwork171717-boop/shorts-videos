@@ -6,7 +6,7 @@ import { T, lineWords } from './timing.js';
 
 // v6 captions: rounded heavy white words (Nunito Black, falls back to Inter), a slim dark edge and a soft blurred shadow,
 // lower-middle of the frame, a quick springy pop-in per word chunk.
-export const CAP = { y: 1420, size: 92, maxW: 940, font: 'Nunito, Inter' };
+export const CAP = { y: 1350, size: 74, maxW: 900, font: 'Nunito, Inter', weight: 900, pop: 0.06 };   // v8: like the references (small, 1-2 words, mid-low)
 let caps = [];
 const SHORT = /^(a|an|the|to|of|in|on|at|by|and|but|or|so|is|it|he|she|we|i|his|her|my|no|up|for|was)$/i;
 
@@ -45,15 +45,15 @@ export const captionList = () => caps.map((c) => ({ ...c, words: [{ txt: c.text 
 /** draw one caption text at x, y (also used by the style sheet) */
 export function captionText(text, x = 540, y = CAP.y, sc = 1) {
   const size = CAP.size;
-  ctx.save(); ctx.font = `900 ${size}px ${CAP.font}`; ctx.letterSpacing = '0.5px';
+  ctx.save(); ctx.font = `${CAP.weight || 900} ${size}px ${CAP.font}`; ctx.letterSpacing = '0.5px';
   const fit = Math.min(1, CAP.maxW / ctx.measureText(text).width);
   ctx.translate(x, y); ctx.scale(sc * fit, sc * fit); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 6; ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(text, 0, 4); ctx.restore();
-  ctx.lineWidth = 9; ctx.strokeStyle = 'rgba(16,12,28,0.92)'; ctx.strokeText(text, 0, 0);
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4; ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(text, 0, 3); ctx.restore();
+  ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(16,12,28,0.92)'; ctx.strokeText(text, 0, 0);
   ctx.fillStyle = '#FFFFFF'; ctx.fillText(text, 0, 0);
   ctx.restore();
 }
 export function drawCaption(t) {
   const c = caps.find((c) => t >= c.s && t < c.e); if (!c) return;
-  const lt = t - c.s; captionText(c.text, 540, CAP.y, lt < 0.12 ? lerp(0.7, 1, eob(seg(lt, 0, 0.12))) : 1);
+  const lt = t - c.s; captionText(c.text, 540, CAP.y, CAP.pop && lt < CAP.pop ? lerp(0.9, 1, eob(seg(lt, 0, CAP.pop))) : 1);
 }

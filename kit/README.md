@@ -100,3 +100,16 @@ Render cost: about 3 s per frame at res 0.6 without a GPU (render in 4-second se
   marked Tamil). With Zapier YouTube "Make API Mutating Request": PUT https://www.googleapis.com/youtube/v3/videos
   ?part=snippet with the video's id and its full snippet (title, description, tags, categoryId) plus
   "defaultLanguage": "en", "defaultAudioLanguage": "en".
+
+## v8 (matched to 20 reference Shorts: story, camera, bodies, colour, music)
+- Full rules: STYLE.md section 0 (written by `iron-canyon-setup.sh`). In short: unnamed characters and a story with
+  dialogue, mockery, a "You see," analogy and an ironic ending (no school tone, no inventor names); 55-65 s; one long
+  `A.camPath` move per scene and dissolves only for time skips; `A.perform` + `A.react` on every body; high-key
+  pastel grade (lift/gain); 1-2 word captions at y 1350; in-world signs instead of pop-up text.
+- Music: `"music": "steady"` in `mix.py` (original 96 BPM groove, no builds or stops, no ducking, about -19 dB).
+- Voice: `clone_voice.py` v8 makes ~28-word chunks (best of N by Parakeet word check + WeSpeaker likeness + pitch) and
+  writes exact word times to `data/words.json`; models come from the sherpa-onnx GitHub releases.
+- New engine files: `critters.js` (emus and other drawn animals), `outback.js` (wheat farm, road, army truck).
+  Example: `examples/emu-war-shots.js` / `emu-war-script.json`.
+- The user's exact Gemini narrator: Zapier "Google AI Studio (Gemini)" generate_audio works once that app is connected;
+  until then the Pocket clone is used.

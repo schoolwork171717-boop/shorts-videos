@@ -1,18 +1,19 @@
-"""Iron Canyon kit: the narrator voice, cloned from the user's own reference video (kit v7).
+"""Iron Canyon kit v8: the narrator voice, cloned from the user's reference video, told as one flowing story.
 
-  ~/.faceless-shorts/venv/bin/python tools/clone_voice.py <project>
-      script.json -> data/narration.wav + data/lines.json (same format as voice.py, so words.py and the mixer just work)
+  ~/.faceless-shorts/venv/bin/python tools/clone_voice.py <project> [--redo 0,3]
+      script.json -> data/narration.wav + data/lines.json + data/words.json (real word times, no words.py needed)
 
-script.json keys: "voice": "clone", "voice_ref": path to the reference clip (default: the kit's voice/narrator.wav next to
-this file or in ~/.faceless-shorts/voice/), "speed" (default 1.12), "lead", "gap", "outro", "tries" (default 5).
+script.json keys: "voice": "clone", "voice_ref" (default: voice/narrator.wav in the kit or ~/.faceless-shorts/voice/),
+"speed" (default 1.12), "lead", "gap" (between chunks, default 0.05), "outro", "tries" (default 5).
 
-How it works: Kyutai Pocket TTS (via sherpa-onnx) speaks each line in the voice of the reference clip. It samples, so
-every line is made several times and the best take is kept: every word must be there (checked with Whisper), then the
-take that sounds most like the reference (WeSpeaker speaker similarity), sits nearest its pitch (~190 Hz) and pace wins.
-No audio effects are added. Models come from the sherpa-onnx GitHub releases (works in cloud runs; Hugging Face is not
-needed). Needs: uv pip install sherpa-onnx num2words (setup does this).
+v8 changes: lines are spoken in CHUNKS (a whole sentence or two at once, up to ~28 words) instead of one line at a time,
+so the voice flows like a storyteller instead of resetting every line. Each chunk is made several times (Kyutai
+Pocket TTS via sherpa-onnx, voice copied from the reference clip) and the best take wins: every word must be heard
+(NeMo Parakeet ASR), then the take that sounds most like the reference (WeSpeaker), nearest its pitch (~190 Hz) and
+liveliness. Parakeet's word timestamps then give exact line and word times, which drive captions and acting.
+No audio effects. Models come from the sherpa-onnx GitHub releases on first use (works in cloud runs).
 """
-import json, os, re, sys, time, urllib.request, tarfile
+import json, os, re, sys, time, urllib.request, tarfile, difflib
 from pathlib import Path
 import numpy as np
 import scipy.io.wavfile as wf
@@ -24,10 +25,10 @@ MD = HOME / 'clone'
 REL = 'https://github.com/k2-fsa/sherpa-onnx/releases/download/'
 MODELS = {
     'pocket': ('tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2', 'sherpa-onnx-pocket-tts-int8-2026-01-26'),
-    'whisper': ('asr-models/sherpa-onnx-whisper-base.en.tar.bz2', 'sherpa-onnx-whisper-base.en'),
+    'asr': ('asr-models/sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8.tar.bz2', 'sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8'),
     'spk': ('speaker-recongition-models/wespeaker_en_voxceleb_resnet34.onnx', 'wespeaker_en_voxceleb_resnet34.onnx'),
 }
-TARGET_F0 = 190.0      # the reference narrator's median pitch (Hz)
+TARGET_F0, TARGET_RANGE = 190.0, 5.9      # the reference narrator: median pitch (Hz), pitch movement (semitones std)
 
 
 def ensure_models():
@@ -52,7 +53,7 @@ def load(fn, sr_out):
 def trim(x, thr=0.01):
     a = np.abs(x); idx = np.where(a > thr * a.max())[0]
     if not len(idx): return x
-    pad = int(0.02 * SR); return x[max(0, idx[0] - pad): idx[-1] + pad]
+    pad = int(0.03 * SR); return x[max(0, idx[0] - pad): idx[-1] + pad]
 
 
 def norm_words(s):
@@ -64,12 +65,15 @@ def norm_words(s):
     return s.split()
 
 
-def match(want, got):
-    import difflib
-    a, b = norm_words(want), norm_words(got)
-    if not a: return 1.0
-    sm = difflib.SequenceMatcher(None, a, b); hit = sum(m.size for m in sm.get_matching_blocks())
-    return hit / max(len(a), len(b))
+def chunks_of(lines, max_words=28):
+    """group consecutive lines into spoken chunks that end on a sentence end"""
+    out, cur, n = [], [], 0
+    for i, ln in enumerate(lines):
+        cur.append(i); n += len(ln['text'].split())
+        end = ln['text'].rstrip().endswith(('.', '!', '?', '"', '”'))
+        nxt = len(lines[i + 1]['text'].split()) if i + 1 < len(lines) else 0
+        if (end and n >= 8) or n + nxt > max_words or i == len(lines) - 1: out.append(cur); cur, n = [], 0
+    return out
 
 
 def main():
@@ -86,8 +90,8 @@ def main():
         lm_flow=str(D / 'lm_flow.int8.onnx'), lm_main=str(D / 'lm_main.int8.onnx'), encoder=str(D / 'encoder.onnx'),
         decoder=str(D / 'decoder.int8.onnx'), text_conditioner=str(D / 'text_conditioner.onnx'), vocab_json=str(D / 'vocab.json'),
         token_scores_json=str(D / 'token_scores.json')), num_threads=2)))
-    W = MD / MODELS['whisper'][1]
-    asr = so.OfflineRecognizer.from_whisper(encoder=str(W / 'base.en-encoder.int8.onnx'), decoder=str(W / 'base.en-decoder.int8.onnx'), tokens=str(W / 'base.en-tokens.txt'), num_threads=2)
+    A = MD / MODELS['asr'][1]
+    asr = so.OfflineRecognizer.from_nemo_ctc(model=str(A / 'model.int8.onnx'), tokens=str(A / 'tokens.txt'), num_threads=2)
     spk = so.SpeakerEmbeddingExtractor(so.SpeakerEmbeddingExtractorConfig(model=str(MD / MODELS['spk'][1]), num_threads=2))
     ref24 = load(ref_path, SR); ref16 = load(ref_path, 16000)
 
@@ -95,53 +99,93 @@ def main():
         st = spk.create_stream(); st.accept_waveform(16000, y16); st.input_finished(); e = np.array(spk.compute(st)); return e / np.linalg.norm(e)
     REF = emb(ref16)
 
-    def score(text, y):
+    def hear(y):
+        """ASR words with start times (s, relative to y)"""
         y16 = ss.resample_poly(y, 2, 3).astype(np.float32)
-        st = asr.create_stream(); st.accept_waveform(16000, y16); asr.decode_stream(st); heard = st.result.text.strip()
-        m = match(text, heard); sim = float(emb(y16) @ REF)
+        st = asr.create_stream(); st.accept_waveform(16000, y16); asr.decode_stream(st); r = st.result
+        words, cur = [], None
+        for tok, ts in zip(r.tokens, r.timestamps):
+            if tok.startswith(' ') or cur is None:
+                if cur: words.append(cur)
+                cur = {'w': tok.strip(), 's': float(ts)}
+            else: cur['w'] += tok
+        if cur: words.append(cur)
+        words = [w for w in words if re.sub(r"[^A-Za-z0-9']", '', w['w'])]
+        return r.text.strip(), words, y16
+
+    def score(text, y):
+        heard, words, y16 = hear(y)
+        a, b = norm_words(text), norm_words(heard)
+        sm = difflib.SequenceMatcher(None, a, b); m = sum(k.size for k in sm.get_matching_blocks()) / max(len(a), len(b), 1)
+        sim = float(emb(y16) @ REF)
         f, _ = pw.harvest(y16.astype(np.float64), 16000, f0_floor=70, f0_ceil=400, frame_period=10); f = f[f > 0]
         semi = abs(12 * np.log2(np.median(f) / TARGET_F0)) if len(f) else 12
-        return m, sim, semi, heard
+        rng = float(np.std(12 * np.log2(f / np.median(f)))) if len(f) else 0
+        return m, sim, semi, rng, heard, words
 
     def take(text):
         best = None
         for k in range(tries + 6):
             g = so.GenerationConfig(); g.reference_audio = ref24.tolist(); g.reference_sample_rate = SR; g.speed = speed
-            # Pocket TTS tends to swallow a line's first word; a leading "..." usually fixes it (alternate both ways)
+            # Pocket TTS tends to swallow the first word; a leading "..." usually fixes it (alternate both ways)
             y = trim(np.asarray(tts.generate(('... ' + text) if k % 2 == 0 else text, g).samples, dtype=np.float32))
-            m, sim, semi, heard = score(text, y)
-            q = (1.0 if m >= 0.99 else m - 0.6) * 3 + sim - 0.04 * semi
-            print(f'   take {k + 1}: words {m:.2f} voice {sim:.3f} pitch {semi:.1f}st  "{heard}"', flush=True)
-            if best is None or q > best[0]: best = (q, y, m)
+            m, sim, semi, rng, heard, words = score(text, y)
+            q = (1.0 if m >= 0.99 else m - 0.6) * 3 + sim - 0.04 * semi - 0.02 * abs(rng - TARGET_RANGE)
+            print(f'   take {k + 1}: words {m:.2f} voice {sim:.3f} pitch {semi:.1f}st range {rng:.1f}st  "{heard[:70]}"', flush=True)
+            if best is None or q > best[0]: best = (q, y, m, words)
             if k + 1 >= tries and best[2] >= 0.99: break
         if best[2] < 0.99: print(f'   WARNING: best take only matched {best[2]:.0%} of the words', flush=True)
-        y = best[1]; return y / (np.sqrt(np.mean(y ** 2)) + 1e-9) * 0.08          # even loudness line to line
+        y = best[1]; return y / (np.sqrt(np.mean(y ** 2)) + 1e-9) * 0.08, best[3]
 
-    out = [np.zeros(int(S.get('lead', 0.12) * SR))]; t = len(out[0]) / SR; lines = []
-    t0 = time.time()
-    # each line's chosen take is kept in data/clone/ so a re-run only remakes lines that changed or that you list:
-    #   clone_voice.py <project> --redo 6,8,10
+    def align(lines_idx, heard_words, dur):
+        """script words (with line index) -> times, from the ASR word times"""
+        sw = [(li, w) for li in lines_idx for w in S['lines'][li]['text'].split()]
+        a = [(norm_words(w) or [''])[0] for _, w in sw]; b = [(norm_words(w['w']) or [''])[0] for w in heard_words]
+        times = [None] * len(sw)
+        for blk in difflib.SequenceMatcher(None, a, b).get_matching_blocks():
+            for k in range(blk.size): times[blk.a + k] = heard_words[blk.b + k]['s']
+        known = [i for i, t in enumerate(times) if t is not None]
+        for i in range(len(times)):                                    # fill gaps by interpolation
+            if times[i] is None:
+                lo = max([k for k in known if k < i], default=None); hi = min([k for k in known if k > i], default=None)
+                t0 = times[lo] if lo is not None else 0.0; t1 = times[hi] if hi is not None else dur - 0.2
+                i0 = lo if lo is not None else -1; i1 = hi if hi is not None else len(times)
+                times[i] = t0 + (t1 - t0) * (i - i0) / (i1 - i0)
+        ends = [max(times[i] + 0.12, times[i + 1] - 0.02) if i + 1 < len(times) else min(dur, times[i] + 0.45) for i in range(len(times))]
+        return [(li, w, s, e) for (li, w), s, e in zip(sw, times, ends)]
+
     redo = set()
     if '--redo' in sys.argv: redo = {int(v) for v in sys.argv[sys.argv.index('--redo') + 1].split(',') if v.strip()}
-    CD = P / 'data/clone'; CD.mkdir(parents=True, exist_ok=True)
-    for i, ln in enumerate(S['lines']):
-        print(f'{i:2d} {ln["text"]}', flush=True)
-        cw, ct = CD / f'line{i:02d}.wav', CD / f'line{i:02d}.txt'
-        if i not in redo and cw.exists() and ct.exists() and ct.read_text() == ln['text']:
-            x = load(str(cw), SR).astype(np.float64); print('   (kept)', flush=True)
+    CD = P / 'data/clone8'; CD.mkdir(parents=True, exist_ok=True)
+    groups = chunks_of(S['lines'])
+    out = [np.zeros(int(float(S.get('lead', 0.12)) * SR))]; t = len(out[0]) / SR
+    lines = [None] * len(S['lines']); words = []
+    t0 = time.time()
+    for ci, g in enumerate(groups):
+        text = ' '.join(S['lines'][i]['text'] for i in g)
+        print(f'chunk {ci} (lines {g[0]}-{g[-1]}): {text}', flush=True)
+        cw, cj = CD / f'chunk{ci:02d}.wav', CD / f'chunk{ci:02d}.json'
+        cached = cj.exists() and cw.exists() and json.loads(cj.read_text()).get('text') == text and ci not in redo
+        if cached:
+            x = load(str(cw), SR).astype(np.float64); hw = json.loads(cj.read_text())['words']; print('   (kept)', flush=True)
         else:
-            x = take(ln['text']); wf.write(cw, SR, (np.clip(x, -1, 1) * 32767).astype(np.int16)); ct.write_text(ln['text'])
-        lines.append({'i': i, 'text': ln['text'], 'start': round(t, 3), 'end': round(t + len(x) / SR, 3)})
-        gap = np.zeros(int(float(ln.get('gap', S.get('gap', 0.04))) * SR))
+            x, hw = take(text); wf.write(cw, SR, (np.clip(x, -1, 1) * 32767).astype(np.int16)); cj.write_text(json.dumps({'text': text, 'words': hw}))
+        al = align(g, hw, len(x) / SR)
+        for li in g:
+            ws = [a for a in al if a[0] == li]
+            lines[li] = {'i': li, 'text': S['lines'][li]['text'], 'start': round(t + max(0, ws[0][2] - 0.04), 3), 'end': round(t + ws[-1][3], 3)}
+        words += [{'w': w, 'line': li, 's': round(t + s, 3), 'e': round(t + e, 3)} for li, w, s, e in al]
+        gap = np.zeros(int(float(S.get('gap', 0.05)) * SR)) if ci + 1 < len(groups) else np.zeros(0)
         out += [x, gap]; t += (len(x) + len(gap)) / SR
     out.append(np.zeros(int(float(S.get('outro', 0.6)) * SR)))
     y = np.concatenate(out); y = y / (np.abs(y).max() + 1e-9) * 0.9
     (P / 'data').mkdir(exist_ok=True)
     wf.write(P / 'data/narration.wav', SR, (y * 32767).astype(np.int16))
     dur = len(y) / SR
-    (P / 'data/lines.json').write_text(json.dumps({'duration': round(dur, 3), 'voice': 'clone:' + Path(ref_path).name, 'speed': speed, 'lines': lines}, indent=1))
-    words = sum(len(l['text'].split()) for l in S['lines'])
-    print(f'data/narration.wav ({dur:.2f} s, {words / dur:.2f} words/s, {time.time() - t0:.0f} s to make) + data/lines.json. Next: words.py')
+    (P / 'data/lines.json').write_text(json.dumps({'duration': round(dur, 3), 'voice': 'clone8:' + Path(ref_path).name, 'speed': speed, 'lines': lines}, indent=1))
+    (P / 'data/words.json').write_text(json.dumps(words, indent=0))
+    nw = len(words)
+    print(f'data/narration.wav ({dur:.2f} s, {nw / dur:.2f} words/s, {time.time() - t0:.0f} s to make) + data/lines.json + data/words.json (real word times; skip words.py)')
 
 
 if __name__ == '__main__':

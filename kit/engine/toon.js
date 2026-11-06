@@ -40,7 +40,7 @@ export function drawToon(g, look = {}, st = {}) {
   const by = (sit ? 210 : 0) + (L.kid ? 190 : 0) + (S.bob || 0) + (jump ? -60 : 0);       // how far the upper body drops (kids: short legs)
   const sq = 1 + (S.squash || 0);
   // body box
-  const bx = 256, top = 330 + by, bot = 600 + by * 0.98, bw = 92;     // half width at the hips
+  const bx = 256, top = 330 + by, bot = 600 + by * 0.98, bw = L.bw ?? 106, sw = L.sw ?? 66;     // v8: a chunkier bean (half width at the hips / shoulders)
   const hipY = bot - 26;
 
   // ---- legs (behind the body) ----
@@ -65,11 +65,11 @@ export function drawToon(g, look = {}, st = {}) {
 
   // ---- body (a bean) ----
   const body = new Path2D();
-  body.moveTo(bx - 58, top + 10);
-  body.bezierCurveTo(bx - 80, top + 40, bx - bw - 6, bot - 120, bx - bw, bot - 50);
+  body.moveTo(bx - sw, top + 10);
+  body.bezierCurveTo(bx - sw - 22, top + 40, bx - bw - 6, bot - 120, bx - bw, bot - 50);
   body.bezierCurveTo(bx - bw + 4, bot + 6, bx + bw - 4, bot + 6, bx + bw, bot - 50);
-  body.bezierCurveTo(bx + bw + 6, bot - 120, bx + 80, top + 40, bx + 58, top + 10);
-  body.bezierCurveTo(bx + 30, top - 8, bx - 30, top - 8, bx - 58, top + 10);
+  body.bezierCurveTo(bx + bw + 6, bot - 120, bx + sw + 22, top + 40, bx + sw, top + 10);
+  body.bezierCurveTo(bx + sw * 0.5, top - 8, bx - sw * 0.5, top - 8, bx - sw, top + 10);
   body.closePath();
   g.fillStyle = L.body; g.fill(body);
   g.save(); g.clip(body);
@@ -96,7 +96,7 @@ export function drawToon(g, look = {}, st = {}) {
   // ---- arms (in front of the body) ----
   const hands = {};
   const arm = (side, [a, e], hold) => {
-    const sx = bx + side * 66, sy = top + 46;
+    const sx = bx + side * (sw + 8), sy = top + 46;
     const u = 118, lo = 112;
     const a1 = a * R2D, a2 = (a + e) * R2D;
     const ex = sx + side * Math.sin(a1) * u, ey = sy + Math.cos(a1) * u;
@@ -132,9 +132,9 @@ export function drawToon(g, look = {}, st = {}) {
   // crescent shade on the lower right + light pencil hatching inside it (the hand-inked look)
   const cres = new Path2D(); cres.arc(hx + 40, hy + 34, r * 1.02, 0, Math.PI * 2); cres.rect(hx - 400, hy - 400, 800, 800);
   g.fillStyle = L.headShade || '#DCDCE4'; g.fill(cres, 'evenodd');
-  g.save(); g.clip(cres, 'evenodd'); g.strokeStyle = INK; g.globalAlpha = 0.13; g.lineWidth = 3;
-  for (let k = -r * 2; k < r * 2; k += 15) { g.beginPath(); g.moveTo(hx + k, hy + r); g.lineTo(hx + k + r * 0.55, hy - r * 0.2); g.stroke(); }
-  g.restore();
+  if (L.hatch) { g.save(); g.clip(cres, 'evenodd'); g.strokeStyle = INK; g.globalAlpha = 0.13; g.lineWidth = 3;     // old v3-v7 pencil hatching (off in v8: clean soft shade like the references)
+    for (let k = -r * 2; k < r * 2; k += 15) { g.beginPath(); g.moveTo(hx + k, hy + r); g.lineTo(hx + k + r * 0.55, hy - r * 0.2); g.stroke(); }
+    g.restore(); }
   g.restore();
   g.strokeStyle = INK; g.lineWidth = LW + 1; g.stroke(head);
   if (L.hair) drawHair(g, L, hx, hy, r);
@@ -398,6 +398,12 @@ function drawHat(g, L, hx, hy, r) {
   } else if (L.hat === 'headband') {
     g.fillStyle = c; g.fillRect(hx - r * 0.98, top + 46, r * 1.96, 30); g.strokeRect(hx - r * 0.98, top + 46, r * 1.96, 30);
     g.beginPath(); g.moveTo(hx + r * 0.95, top + 60); g.quadraticCurveTo(hx + r * 1.35, top + 40, hx + r * 1.5, top + 90); g.lineTo(hx + r * 1.3, top + 96); g.quadraticCurveTo(hx + r * 1.25, top + 70, hx + r * 0.95, top + 74); g.fill(); g.stroke();
+  } else if (L.hat === 'slouch') {                               // army slouch hat: wide brim, left side pinned up, a band
+    g.beginPath(); g.moveTo(hx - r * 1.05, top + 30); g.quadraticCurveTo(hx - r * 1.2, top - 60, hx - r * 0.62, top - 10); g.lineTo(hx - r * 0.55, top + 24); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.ellipse(hx + 14, top + 30, r * 1.18, 24, 0.04, 0, 7); g.fill(); g.stroke();
+    g.beginPath(); g.ellipse(hx + 4, top + 18, r * 0.68, 76, 0, Math.PI, 0); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = L.band || '#4A3A28'; g.beginPath(); g.rect(hx - r * 0.66, top + 2, r * 1.34, 16); g.fill(); g.stroke();
+    g.fillStyle = '#E2B33C'; g.beginPath(); g.arc(hx - r * 0.95, top - 18, 12, 0, 7); g.fill(); g.stroke();
   } else if (L.hat === 'cap') {                                  // newsboy cap
     g.beginPath(); g.ellipse(hx + 6, top + 34, r * 0.98, 62, -0.05, Math.PI, 0); g.closePath(); g.fill(); g.stroke();
     g.fillStyle = shadeOf(c, 0.75); g.beginPath(); g.ellipse(hx - 24, top + 40, r * 0.78, 22, 0.05, 0, Math.PI); g.fill(); g.stroke();

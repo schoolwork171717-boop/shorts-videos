@@ -343,6 +343,46 @@ def music_bright():
     fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.08 * SR); fade[:fi] *= np.linspace(0, 1, fi)
     return st / (np.abs(st).max() + 1e-9) * fade[:, None]
 
+def music_steady():
+    """the DEFAULT bed since kit v8 (script.json "music": "steady"): a mellow, curious groove that never changes, so it
+    sits under the story like the reference channel's beds. 96 BPM, one 4-bar loop the whole way (Fmaj7, Dm7, Bbmaj7,
+    C6): a round muted bass on 1, the and-of-2 and 3; soft electric-piano chords; a quiet marimba 8th-note pattern; a
+    very soft kick on 1 and 3, brush on 2 and 4 and a shaker. No melody, no builds, no drops, no stops, no fills;
+    only a 1.2 s fade at the very end. Original."""
+    bpm = 96; beat = 60 / bpm; bar = beat * 4; L_ = np.zeros(N); R_ = np.zeros(N); rs = np.random.default_rng(41)
+    chords = [[87.31, 110.0, 130.81, 164.81], [73.42, 87.31, 110.0, 130.81], [58.27, 87.31, 110.0, 146.83], [65.41, 98.0, 110.0, 130.81]]
+    def put(i, y, pan=0.0):
+        if i < 0 or i >= N: return
+        n = min(len(y), N - i); L_[i:i + n] += y[:n] * (1 - max(0, pan)); R_[i:i + n] += y[:n] * (1 + min(0, pan))
+    hum = lambda: rs.normal(0, 0.006)
+    vel = lambda g: g * rs.uniform(0.9, 1.03)
+    def bass(f, d):
+        t_ = tt(d); y = np.sin(2 * np.pi * f * t_) + 0.3 * np.sin(4 * np.pi * f * t_) + 0.15 * np.sin(6 * np.pi * f * t_)
+        return lp(y, 700) * np.minimum(1, t_ / 0.008) * np.exp(-t_ * 4.5)
+    def epiano(fs, d):
+        t_ = tt(d); y = sum(np.sin(2 * np.pi * f * 2 * t_) * (1 + 0.25 * np.sin(2 * np.pi * 0.6 * t_)) + 0.18 * np.sin(2 * np.pi * f * 4 * t_) * np.exp(-t_ * 6) for f in fs)
+        return lp(y, 2600) * np.minimum(1, t_ / 0.02) * np.exp(-t_ * 1.4) * 0.25
+    def marimba(f):
+        d = 0.35; t_ = tt(d); return (np.sin(2 * np.pi * f * t_) * np.exp(-t_ * 11) + 0.2 * np.sin(2 * np.pi * f * 3.9 * t_) * np.exp(-t_ * 40))
+    kick = lambda g: np.sin(2 * np.pi * (46 + 60 * np.exp(-tt(0.2) * 30)) * tt(0.2)) * env(int(0.2 * SR), 0.002, 12) * g
+    brush = lambda g: bp(noise(0.16), 1800, 7000) * env(int(0.16 * SR), 0.01, 18) * g
+    shk = lambda g: hp(noise(0.05), 6000) * env(int(0.05 * SR), 0.004, 36) * g
+    nb = int(DUR / bar) + 2
+    for b in range(nb):
+        ch = chords[b % 4]; b0 = b * bar
+        put(int((b0 + hum()) * SR), bass(ch[0], beat * 0.9) * vel(0.42)); put(int((b0 + 1.5 * beat + hum()) * SR), bass(ch[0], beat * 0.45) * vel(0.24)); put(int((b0 + 2 * beat + hum()) * SR), bass(ch[2] / 2, beat * 0.9) * vel(0.34))
+        put(int((b0 + hum()) * SR), epiano(ch[1:], bar * 0.95) * vel(0.9), -0.15); put(int((b0 + 2.5 * beat + hum()) * SR), epiano(ch[1:], beat * 1.4) * vel(0.45), 0.15)
+        for k in range(8):
+            f = [ch[1], ch[2], ch[3], ch[2], ch[1] * 2, ch[3], ch[2], ch[3]][k] * 4
+            put(int((b0 + k * beat / 2 + hum()) * SR), marimba(f) * vel(0.055 if k % 2 == 0 else 0.04), 0.35 if k % 2 else -0.35)
+        for k in (0, 2): put(int((b0 + k * beat) * SR), kick(vel(0.2)))
+        for k in (1, 3): put(int((b0 + k * beat + hum()) * SR), brush(vel(0.07)), 0.1)
+        for k in range(8): put(int((b0 + k * beat / 2 + hum()) * SR), shk(vel(0.035 if k % 2 else 0.022)), -0.25)
+    st = np.stack([L_, R_], 1); st[:, 0] = hp(lp(st[:, 0], 6500), 35); st[:, 1] = hp(lp(st[:, 1], 6500), 35)
+    st = _reverb(st, 1.4, 0.18)
+    fade = np.ones(N); fo = int(1.2 * SR); fade[-fo:] = np.linspace(1, 0, fo); fi = int(0.05 * SR); fade[:fi] *= np.linspace(0, 1, fi)
+    return st / (np.abs(st).max() + 1e-9) * fade[:, None]
+
 def energize(v, sr_, up=1.5, expr=1.4):
     """livelier narration without changing timing (script.json "energize": {"up": semitones, "expr": factor}): WORLD
     vocoder raises the pitch a little and widens its movement around a slow baseline. Needs pyworld; skipped if missing."""
@@ -393,11 +433,11 @@ if vf.exists():
 # music
 mus = script.get('music', 'bed')
 if mus and mus != 'none':
-    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else music_epic() if mus == 'epic' else music_bright() if mus == 'bright' else None
+    m = music_bed() if mus == 'bed' else music_tension() if mus == 'tension' else music_bounce() if mus == 'bounce' else music_quirk() if mus == 'quirk' else music_dry() if mus == 'dry' else music_epic() if mus == 'epic' else music_bright() if mus == 'bright' else music_steady() if mus == 'steady' else None
     if m is None:
         a = load_audio(P / mus)[:N]; m = np.zeros(N); m[:len(a)] = a.mean(1); m /= np.abs(m).max() + 1e-9
-    m = (m if m.ndim == 2 else np.stack([m, m], 1)) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -15 if mus == 'epic' else -13 if mus == 'bright' else -24) if voice is not None else -20)
-    if voice is not None:                                                        # duck under the voice
+    m = (m if m.ndim == 2 else np.stack([m, m], 1)) * db((-9 if mus == 'quirk' else -14 if mus == 'dry' else -15 if mus == 'epic' else -13 if mus == 'bright' else -19 if mus == 'steady' else -24) if voice is not None else -20)
+    if voice is not None and mus != 'steady':                                    # duck under the voice (the steady bed never ducks: no pumping)
         lev = np.abs(voice.mean(1)); lev = signal.lfilter([1 - 0.9995], [1, -0.9995], lev); lev /= lev.max() + 1e-9
         m *= (1 - (0.4 if mus in ('quirk', 'dry', 'epic', 'bright') else 0.55) * np.clip(lev * 3, 0, 1))[:, None]
     mix += m

@@ -79,3 +79,55 @@ export function arm(t, list, { seed = 0, lag = 0.07, dur = 0.3 } = {}) {
 }
 /** an idle arm pose that breathes (use when a shot doesn't pose the arm) */
 export const idleArm = (t, seed = 0, side = 1) => [10 + Math.sin(t * 2.1 + seed + side) * 3, 8 + Math.sin(t * 2.6 + seed * 1.3 + side) * 5];
+
+// ───────────── kit v8: bodies that never stop (matched to the reference channel) ─────────────
+const rnd8 = (i, seed) => { const x = Math.sin(i * 127.1 + seed * 311.7 + 17.3) * 43758.5453; return x - Math.floor(x); };
+const GESTURES = [[70, 80], [100, 40], [45, 110], [125, 25], [85, 95], [60, 125], [110, 60]];
+/** the performance layer: talking bounce, weight shift, head sway, breathing and a talking-hands gesture every
+ *  ~0.8-1.3 s (upper arm leads with overshoot, forearm follows). k = energy (0 still, 1 normal, 1.6 hyped).
+ *  Spread it into a Toon state, then override anything the beat needs: { ...A.perform(t, p.seed), mood, armR: ... }.
+ *  Returns { bob, lean, tilt, squash, armL, armR, dx } (dx = metres of sideways weight shift for the position). */
+export function perform(t, seed = 0, k = 1, { talk = 1, gestures = true } = {}) {
+  const per = 0.8 + rnd8(1, seed) * 0.5, off = rnd8(2, seed) * per, n = Math.floor((t + off) / per);
+  const list = (side) => { const L = []; for (let i = n - 2; i <= n + 1; i++) { const p = rnd8(i + 7, seed), s = p < 0.42 ? -1 : p < 0.84 ? 1 : 0; const g = GESTURES[Math.floor(rnd8(i + 11, seed) * GESTURES.length)];
+      const on = gestures && (s === side || s === 0) && rnd8(i + 13, seed) < 0.8; const t0 = i * per - off;
+      L.push([t0, on ? [g[0] * (0.75 + 0.25 * k), g[1]] : [12 + rnd8(i, seed) * 8, 10 + rnd8(i + 3, seed) * 14]]); L.push([t0 + per * 0.55, [12, 12]]); } return L; };
+  const armL = arm(t, list(-1), { seed, dur: 0.28 }), armR = arm(t, list(1), { seed: seed + 3, dur: 0.28 });
+  const talkB = Math.abs(Math.sin(t * Math.PI * 2 * 2.05 + seed)) * talk;
+  return {
+    bob: -talkB * 7 * k + Math.sin(t * 1.8 + seed) * 2 * k,
+    lean: Math.sin(t * Math.PI * 2 * 0.33 + seed) * 2.6 * k + Math.sin(t * Math.PI * 2 * 0.9 + seed * 2) * 0.8 * k,
+    tilt: Math.sin(t * Math.PI * 2 * 0.47 + seed * 2) * 4.5 * k,
+    squash: (Math.sin(t * Math.PI * 2 * 0.28 + seed) * 0.02 + talkB * 0.03) * k,
+    armL, armR, dx: Math.sin(t * Math.PI * 2 * 0.21 + seed) * 0.035 * k,
+  };
+}
+/** big body reactions on a beat (t0), blend out after dur. Spread after perform(): { ...A.perform(..), ...A.react('laugh', t, t0) } */
+export function react(type, t, t0, dur = 0.9) {
+  if (t < t0 || t > t0 + dur) return {};
+  const x = (t - t0) / dur, k = Math.sin(Math.PI * Math.min(1, x * 1.4)) * (1 - x * 0.3), w = t - t0;
+  switch (type) {
+    case 'laugh': return { lean: -9 * k, bob: Math.sin(w * 56) * 6 * k, tilt: Math.sin(w * 28) * 6 * k, armL: [35, 115], armR: [35, 115], squash: Math.abs(Math.sin(w * 28)) * 0.05 * k };
+    case 'angry': return { dx: Math.sin(w * 88) * 0.025 * k, bob: Math.abs(Math.sin(w * 18)) * -10 * k, armL: [150, 40], armR: [150, 40], squash: 0.06 * k };
+    case 'shock': return { hopY: hop(t, t0, 0.35, 0.16), squash: -0.12 * k, armL: [150, -15], armR: [150, -15], lean: -4 * k };
+    case 'shrug': return { armL: [110, -70], armR: [110, -70], bob: -10 * k, tilt: 9 * k };
+    case 'proud': return { lean: -7 * k, armL: [38, 128], armR: [38, 128], squash: -0.04 * k };
+    case 'sad': return { lean: 7 * k, bob: 12 * k, armL: [4, 4], armR: [4, 4], tilt: -6 * k };
+    case 'point': return { armR: [95, -5], lean: 5 * k };
+    case 'cheer': return { armL: [165, 10], armR: [165, 10], hopY: hop(t, t0, 0.4, 0.12), squash: squashHop(t, t0, 0.4) };
+  }
+  return {};
+}
+/** one long, continuous camera move through many framings (the reference channel rarely cuts):
+ *  keys = [[time, [x, y, z] position, [x, y, z] look-at, fov?], ...]; smooth Catmull-Rom path, eased at the ends.
+ *  returns { pos: [x, y, z], look: [x, y, z], fov } */
+export function camPath(t, keys) {
+  if (t <= keys[0][0]) return { pos: keys[0][1], look: keys[0][2], fov: keys[0][3] ?? 42 };
+  const N = keys.length; if (t >= keys[N - 1][0]) return { pos: keys[N - 1][1], look: keys[N - 1][2], fov: keys[N - 1][3] ?? 42 };
+  let i = 0; while (i < N - 2 && t > keys[i + 1][0]) i++;
+  const u = (t - keys[i][0]) / (keys[i + 1][0] - keys[i][0]), s = u * u * (3 - 2 * u) * 0.5 + u * 0.5;   // soft ease, never stops dead mid-path
+  const cr = (j) => { const a = keys[Math.max(0, i - 1)][j], b = keys[i][j], c = keys[i + 1][j], d = keys[Math.min(N - 1, i + 2)][j];
+    return b.map((_, q) => { const p0 = a[q], p1 = b[q], p2 = c[q], p3 = d[q], s2 = s * s, s3 = s2 * s; return 0.5 * (2 * p1 + (-p0 + p2) * s + (2 * p0 - 5 * p1 + 4 * p2 - p3) * s2 + (-p0 + 3 * p1 - 3 * p2 + p3) * s3); }); };
+  const f0 = keys[i][3] ?? 42, f1 = keys[i + 1][3] ?? 42;
+  return { pos: cr(1), look: cr(2), fov: f0 + (f1 - f0) * s };
+}

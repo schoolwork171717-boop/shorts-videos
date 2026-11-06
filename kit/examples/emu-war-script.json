@@ -1,0 +1,27 @@
+{
+  "title": "The Army That Lost a War to Birds #shorts",
+  "voice": "clone",
+  "speed": 1.12,
+  "tries": 5,
+  "lead": 0.12,
+  "gap": 0.05,
+  "outro": 1.5,
+  "music": "steady",
+  "lines": [
+    {
+      "text": "An army rolled out machine guns to fight a bunch of birds."
+    },
+    {
+      "text": "The general said it would take a week, tops."
+    },
+    {
+      "text": "A month later, the birds were winning,"
+    },
+    {
+      "text": "and nobody could figure out why."
+    }
+  ],
+  "sources": [
+    "Wikipedia, 'Emu War': in late 1932 Australian soldiers with Lewis machine guns were sent to cull emus damaging wheat in Western Australia; the first attempt (from 2 November) was withdrawn on 8 November, a second ran from 13 November to 10 December with poor results; the emus scattered into small groups and outran the trucks"
+  ]
+}
