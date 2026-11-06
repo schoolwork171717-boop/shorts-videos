@@ -160,7 +160,8 @@ def main():
     groups = chunks_of(S['lines'])
     out = [np.zeros(int(float(S.get('lead', 0.12)) * SR))]; t = len(out[0]) / SR
     lines = [None] * len(S['lines']); words = []
-    t0 = time.time()
+    t0 = time.time(); placed = []
+    keep = json.loads((P / 'data/words.json').read_text()) if '--keep-timing' in sys.argv and (P / 'data/words.json').exists() else None
     for ci, g in enumerate(groups):
         text = ' '.join(S['lines'][i]['text'] for i in g)
         print(f'chunk {ci} (lines {g[0]}-{g[-1]}): {text}', flush=True)
@@ -172,17 +173,31 @@ def main():
             x, hw = take(text); wf.write(cw, SR, (np.clip(x, -1, 1) * 32767).astype(np.int16)); cj.write_text(json.dumps({'text': text, 'words': hw}))
         al = align(g, hw, len(x) / SR)
         # v8.1: cut the dead air the "..." prefix leaves before the first script word and after the last one
-        cut = max(0.0, al[0][2] - 0.07); tail = min(len(x) / SR, al[-1][2] + 0.8, max(al[-1][3] + 0.25, al[-1][2] + 0.45))
-        if cut > 0.02 or tail < len(x) / SR - 0.02:
-            x = x[int(cut * SR): int(tail * SR)]; al = [(li, w, max(0.0, s - cut), max(0.05, e - cut)) for li, w, s, e in al]
+        # v8.4: cut only inside real silence. Head: the quietest 20 ms frame in the 0.3 s before the first script word;
+        # tail: 0.15 s after the last frame that still has voice energy (never before the last word's end). Short fades on
+        # both ends, so no word is ever clipped and no edge clicks (v8.1 cut on word timings and sometimes clipped).
+        fr = int(0.02 * SR); env = np.sqrt(np.convolve(x * x, np.ones(fr) / fr, mode='same') + 1e-12); pk = np.percentile(env, 98)
+        a0 = int(max(0.0, al[0][2] - 0.30) * SR); a1 = int(max(0.0, al[0][2] - 0.02) * SR)
+        cut = (a0 + int(np.argmin(env[a0:a1]))) / SR if a1 - a0 > fr else 0.0
+        if env[int(cut * SR)] > 0.12 * pk: cut = max(0.0, al[0][2] - 0.18)          # no quiet spot: keep a generous margin
+        voiced = np.where(env > 0.05 * pk)[0]; last = (voiced[-1] / SR) if len(voiced) else len(x) / SR
+        tail = min(len(x) / SR, max(last + 0.15, al[-1][3] + 0.1))
+        x = x[int(cut * SR): int(tail * SR)].copy(); al = [(li, w, max(0.0, s - cut), max(0.05, e - cut)) for li, w, s, e in al]
+        fi, fo = min(len(x), int(0.012 * SR)), min(len(x), int(0.035 * SR)); x[:fi] *= np.linspace(0, 1, fi); x[len(x) - fo:] *= np.linspace(1, 0, fo)
         for li in g:
             ws = [a for a in al if a[0] == li]
             lines[li] = {'i': li, 'text': S['lines'][li]['text'], 'start': round(t + max(0, ws[0][2] - 0.04), 3), 'end': round(t + ws[-1][3], 3)}
         words += [{'w': w, 'line': li, 's': round(t + s, 3), 'e': round(t + e, 3)} for li, w, s, e in al]
         gap = np.zeros(int(float(S.get('gap', 0.05)) * SR)) if ci + 1 < len(groups) else np.zeros(0)
+        if keep is not None: placed.append((keep[len(words) - len(al)]['s'] - al[0][2], x))
         out += [x, gap]; t += (len(x) + len(gap)) / SR
     out.append(np.zeros(int(float(S.get('outro', 0.6)) * SR)))
-    y = np.concatenate(out); y = y / (np.abs(y).max() + 1e-9) * 0.9
+    y = np.concatenate(out)
+    if keep is not None:                       # --keep-timing: same word times as the existing words.json, so the picture stays in sync
+        dur0 = json.loads((P / 'data/lines.json').read_text())['duration']; y = np.zeros(int(dur0 * SR) + SR)
+        for st, xx in placed: i0 = max(0, int(st * SR)); y[i0:i0 + len(xx)] += xx[:len(y) - i0]
+        y = y[:int(dur0 * SR)]; words = keep; lines = json.loads((P / 'data/lines.json').read_text())['lines']
+    y = y / (np.abs(y).max() + 1e-9) * 0.9
     (P / 'data').mkdir(exist_ok=True)
     wf.write(P / 'data/narration_raw.wav', SR, (y * 32767).astype(np.int16))
     # v8.2 polish: clean, present, radio-style voice (rumble cut, less boxiness, presence + air, gentle compression)

@@ -99,8 +99,12 @@ export function drawToon(g, look = {}, st = {}) {
     const sx = bx + side * (sw + 8), sy = top + 46;
     const u = 118, lo = 112;
     const a1 = a * R2D, a2 = (a + e) * R2D;
-    const ex = sx + side * Math.sin(a1) * u, ey = sy + Math.cos(a1) * u;
-    const hx = ex + side * Math.sin(a2) * lo, hy = ey + Math.cos(a2) * lo;
+    let ex = sx + side * Math.sin(a1) * u, ey = sy + Math.cos(a1) * u;
+    let hx = ex + side * Math.sin(a2) * lo, hy = ey + Math.cos(a2) * lo;
+    // v8.4: never let a hand (or what it holds) leave the 512 px cut-out, or it gets sliced off on screen
+    const lim = hold ? [96, 416] : [34, 478];
+    if (hx < lim[0] || hx > lim[1] || hy < 30) { const tx = Math.min(lim[1], Math.max(lim[0], hx)), k = Math.max(0.35, Math.min(1, (tx - sx) / ((hx - sx) || 1), hy < 30 ? (sy - 30) / ((sy - hy) || 1) : 1));
+      ex = sx + (ex - sx) * k; ey = sy + (ey - sy) * k; hx = sx + (hx - sx) * k; hy = sy + (hy - sy) * k; }
     g.strokeStyle = INK; g.lineWidth = 14;
     g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(ex, ey, hx, hy); g.stroke();
     if (L.sleeves) {                                            // wide robe sleeve that flares toward the wrist
