@@ -1,0 +1,29 @@
+{
+  "title": "Why Old Coffins Had Doorbells #shorts",
+  "voice": "clone",
+  "speed": 1.12,
+  "tries": 5,
+  "lead": 0.12,
+  "gap": 0.05,
+  "outro": 1.2,
+  "music": "steady",
+  "lines": [
+    { "text": "In the eighteen hundreds, people were so scared of being buried alive, they started building coffins with doorbells." },
+    { "text": "Strings were tied to your hands and feet, and they ran up through the dirt to a little bell above your grave." },
+    { "text": "If you woke up underground, you just wiggled. Ding! Somebody would come dig you out." },
+    { "text": "One doctor was so sure about his design, he had himself buried alive to prove it." },
+    { "text": "He stayed down there for hours, and they even sent him a lunch of soup, sausages, and beer through a pipe." },
+    { "text": "Another inventor added a flag that popped up, and one man spent nine whole days inside his coffin." },
+    { "text": "Cemeteries hired night watchmen just to listen for bells." },
+    { "text": "And the bells did ring. A lot." },
+    { "text": "You see, after someone dies, the body swells up and shifts as it breaks down. So the strings would tug, and the bell would jingle." },
+    { "text": "It's like a smoke alarm that goes off every single time you make toast." },
+    { "text": "After all those inventions, bells, flags, and beer pipes, there's no record of a safety coffin ever saving a single person." },
+    { "text": "And no, that's not where saved by the bell comes from. That one's from boxing." }
+  ],
+  "sources": [
+    "Wikipedia, 'Safety coffin': Taberger's 1829 bell system with strings on the hands, head and feet and a cemetery night watchman; Dr Adolf Gutsmuth was buried alive several times to demonstrate his design and in 1822 ate soup, beer and sausages delivered through the pipe; Karnice-Karnicki's 1897 'Le Karnice' raised a flag and rang a bell, and in 1898 a man spent nine days in it; decay made bodies swell and shift, tugging the cords (false alarms); no documented case of anybody saved by a safety coffin; 'saved by the bell' comes from boxing",
+    "Australian Museum, 'Safety coffins': Taberger's 1829 design alerted a night watchman by a bell; bodies putrefy and bloat; no indication anyone was ever saved",
+    "Ripley's, 'Is the Phrase Saved by the Bell About Being Buried Alive?': the phrase is boxing slang for the end of a round"
+  ]
+}

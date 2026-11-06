@@ -1,0 +1,31 @@
+{
+  "title": "He Lost a Whole Month in a Cave #shorts",
+  "voice": "clone",
+  "speed": 1.12,
+  "tries": 5,
+  "lead": 0.12,
+  "gap": 0.05,
+  "outro": 1.2,
+  "music": "steady",
+  "lines": [
+    { "text": "A guy lived alone in a freezing cave for two months, and somehow lost almost a whole month without noticing." },
+    { "text": "No clock, no calendar, no sunlight. Just a tent, a little lamp, and a phone to the surface." },
+    { "text": "Every time he woke up, ate, or went to bed, he called his team up top." },
+    { "text": "They wrote down the real time, and they were not allowed to tell him." },
+    { "text": "It was barely above freezing down there, and his feet were always wet." },
+    { "text": "One day they asked him to count to a hundred and twenty, one number every second." },
+    { "text": "It took him five minutes." },
+    { "text": "Then the phone rang. The experiment was over." },
+    { "text": "He was confused. By his count, it was only August twentieth. He thought he still had almost a month to go." },
+    { "text": "You see, without the sun, his days quietly stretched a little longer than normal, and his sense of time shrank." },
+    { "text": "It's like a watch that runs a few minutes slow. Each day it's barely off, and a month later you've missed the bus." },
+    { "text": "So he climbed out in dark ski goggles, squinting at a summer that was almost over." },
+    { "text": "His body never lost its rhythm. His brain just lost track of twenty-five days." }
+  ],
+  "sources": [
+    "IFLScience / New Scientist (2018 interview): Siffre went down on July 16, 1962, planning to finish September 14; when told the day had arrived he thought it was August 20; counting to 120 took him five minutes; his sleep-wake days lengthened to about 24.5 hours",
+    "Indian Defence Review, citing Cabinet magazine: Scarasson, 130 m down beside a glacier; no clock, calendar or daylight; the team logged his wake, meal and sleep calls and could not tell him the time; temperatures around 3 C and constantly wet feet; 25 days behind",
+    "Boston Globe obituary (2024): he climbed out in mid-September 1962 wearing ski goggles",
+    "Futura-Sciences: his cycle did not fall apart, it drifted to about 24.5 hours"
+  ]
+}
