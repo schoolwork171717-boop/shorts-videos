@@ -31,7 +31,7 @@ export function buildShots(E) {
   const cam = camera(42);
   const LK = { bloom: 0.18, bloomThreshold: 0.95, aperture: 0.0005, maxblur: 0.005 };
   const shoot = (scene, c, look = LK, t = NOW) => {
-    cam.fov = c.fov; cam.position.set(...c.pos); if (c.fov >= 38 && c.fov <= 44) cam.position.lerp(V3(...c.look), 0.12);
+    cam.fov = c.fov; cam.position.set(...c.pos); cam.position.lerp(V3(...c.look), 0.12 * clamp((50 - c.fov) / 6));   // v9.2: continuous push-in (the old 38-44 on/off switch made the camera jump)
     cam.position.add(V3(Math.sin(t * 0.9) * 0.03, Math.sin(t * 1.3 + 1) * 0.025, Math.sin(t * 0.7 + 2) * 0.025));
     cam.lookAt(V3(...c.look)); cam.rotateZ(Math.sin(t * 0.6 + 0.5) * 0.008); cam.updateProjectionMatrix();
     all.forEach((q) => { q.face(cam); if (q.flat) q.pivot.rotation.y = 0; }); E.render(scene, cam, { ...look, focus: cam.position.distanceTo(V3(...c.look)), t });

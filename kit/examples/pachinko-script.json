@@ -1,0 +1,24 @@
+{
+ "title": "How Japan Pays Gamblers Without Gambling #shorts",
+ "voice": "am_liam:0.5+am_michael:0.5", "speed": 1.12, "lead": 0.12, "gap": 0.14, "outro": 1.2, "music": "steady",
+ "lines": [
+  {"text": "In Japan, gambling for cash is illegal, and yet people walk out of pachinko halls with cash every single day."},
+  {"text": "Here's the trick. You win a bucket full of little silver balls."},
+  {"text": "The hall isn't allowed to give you money, so it swaps your balls for a weird little prize, like a tiny gold bar sealed in plastic."},
+  {"text": "Then you walk out the door, around the corner, to a tiny window where you can't even see a face."},
+  {"text": "You slide the prize in, and cash slides back out."},
+  {"text": "Then a third company buys the prizes from the window and sells them right back to the hall."},
+  {"text": "A new guy watching says, \"Wait. So the prize just goes around in a circle?\""},
+  {"text": "The regular just grins. \"It's not gambling. It's shopping.\""},
+  {"text": "You see, the law only looks at each step on its own."},
+  {"text": "A hall gives you a prize. Legal. A little shop buys a prize from you. Also legal."},
+  {"text": "It's like you hand your friend a sandwich, and he hands you five bucks. Nobody said the word sale."},
+  {"text": "So a giant industry runs on three buildings standing really close together."},
+  {"text": "And all three of them pretend they've never met."}
+ ],
+ "sources": [
+  "https://en.wikipedia.org/wiki/Pachinko#Legal_status",
+  "https://www.japantimes.co.jp/news/2016/10/08/national/pachinko-parlors-cash-legal-gray-zone/",
+  "https://www.bbc.com/news/business-31338187"
+ ]
+}

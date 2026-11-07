@@ -1,0 +1,24 @@
+{
+ "title": "Why Everyone Picks the Same Random Number #shorts",
+ "voice": "am_liam:0.5+am_michael:0.5", "speed": 1.12, "lead": 0.12, "gap": 0.14, "outro": 1.2, "music": "steady",
+ "lines": [
+  {"text": "Someone asked two hundred thousand people to pick a random number from one to a hundred, and they kept picking the same few numbers."},
+  {"text": "Picture a guy with a microphone stopping people on the street."},
+  {"text": "\"Quick, random number, one to a hundred.\" A man thinks really hard and goes, \"Thirty seven.\""},
+  {"text": "Next lady. \"Seventy three.\" Next guy. \"Seventy seven.\""},
+  {"text": "His buddy with the clipboard says, \"Wow. Super random crowd today.\""},
+  {"text": "Meanwhile, almost nobody says ninety, or thirty, or forty."},
+  {"text": "And if you only ask for one to ten, a huge chunk of people just say seven."},
+  {"text": "You see, your brain has a picture of what random looks like, and it's really picky."},
+  {"text": "Even numbers feel too neat. Numbers ending in zero feel planned. One and a hundred are right there in the question."},
+  {"text": "So it grabs something odd, not too big, not too small, that doesn't mean anything. Like thirty seven."},
+  {"text": "It's like trying to stand out in a crowd by wearing the weirdest outfit you own."},
+  {"text": "Then you show up, and everyone else had the exact same idea."},
+  {"text": "So the most random number people can think of is about the least random number there is."}
+ ],
+ "sources": [
+  "https://www.youtube.com/watch?v=d6iQrh2TK98 (Veritasium, Why is this number everywhere? 200,000-response survey)",
+  "https://www.upworthy.com/pick-a-random-number-between-100-you-probably-chose-37-and-there-s-a-big-reason-for-that",
+  "https://en.wikipedia.org/wiki/Blue%E2%80%93seven_phenomenon"
+ ]
+}

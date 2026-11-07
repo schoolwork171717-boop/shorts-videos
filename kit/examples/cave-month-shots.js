@@ -12,7 +12,7 @@ import { Toon, INK, PROPS } from './core/toon.js';
 import * as FX from './core/fx.js';
 
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
-let NOW = 0, FF = null;
+let CUR = '_', NOW = 0, FF = null;
 const LOOK = {
   caver: { body: '#D8343F', pattern: 'jacket', patCol: '#A82A30', hat: 'beanie', hatCol: '#3C6FB6', extra: ['beard'], beardCol: '#6A4A30', neck: 'scarf', neckCol: '#F2C230' },
   chief: { body: '#3C6FB6', pattern: 'vest', patCol: '#2E5A9A', hat: 'cap', hatCol: '#2A2830', extra: ['mustache', 'glasses'], mustacheCol: '#5A3A22' },
@@ -23,14 +23,14 @@ function pencilProp(g, x, y) { g.save(); g.translate(x, y); g.rotate(0.5); g.fil
 
 export function buildShots(E) {
   const S = [], CUES = [], cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
-  const add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; FF = null; f(lt, d, t, blit); FX.motes(t, { n: o.cave ? 26 : 16, col: o.cave ? '200,230,255' : '255,240,210', size: 0.9 }); }; S.push(o); return o; };
+  const add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; CUR = o.id; FF = null; f(lt, d, t, blit); FX.motes(t, { n: o.cave ? 26 : 16, col: o.cave ? '200,230,255' : '255,240,210', size: 0.9 }); }; S.push(o); return o; };
   const cam = camera(42);
   const LK = { bloom: 0.18, bloomThreshold: 0.95, aperture: 0.0016, maxblur: 0.009 };
   const shoot = (scene, c, look = LK, t = NOW) => {
-    cam.fov = c.fov; cam.position.set(...c.pos); if (c.fov >= 38 && c.fov <= 44) cam.position.lerp(V3(...c.look), 0.12);
+    cam.fov = c.fov; cam.position.set(...c.pos); cam.position.lerp(V3(...c.look), 0.12 * clamp((50 - c.fov) / 6));   // v9.2: continuous push-in (the old 38-44 on/off switch made the camera jump)
     cam.position.add(V3(Math.sin(t * 0.9) * 0.03, Math.sin(t * 1.3 + 1) * 0.025, Math.sin(t * 0.7 + 2) * 0.025));
     cam.lookAt(V3(...c.look)); cam.rotateZ(Math.sin(t * 0.6 + 0.5) * 0.008); cam.updateProjectionMatrix();
-    all.forEach((q) => q.face(cam)); A.frameFix(cam, FF || all.filter((q) => q.group.parent === scene), { extras: FF ? [] : [dayBoard, calB, sept] }); all.forEach((q) => q.face(cam)); E.render(scene, cam, { ...look, focus: cam.position.distanceTo(V3(...c.look)), t });
+    all.forEach((q) => q.face(cam)); A.frameFix(cam, FF || all.filter((q) => q.group.parent === scene), { t: NOW, key: CUR, extras: FF ? [] : [dayBoard, calB, sept] }); all.forEach((q) => q.face(cam)); E.render(scene, cam, { ...look, focus: cam.position.distanceTo(V3(...c.look)), t });
   };
   const act = (p, x, z, o = {}, y = 0, k = 1) => {
     const al = A.alive(NOW, p.seed, 1), pf = A.perform(NOW, p.seed, o.energy ?? k, { talk: o.talk ?? 1 });

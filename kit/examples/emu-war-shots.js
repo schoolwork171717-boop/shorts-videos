@@ -35,7 +35,7 @@ export function buildShots(E) {
   const cam = camera(42);
   const LK = { bloom: 0.16, bloomThreshold: 0.97, aperture: 0.0004, maxblur: 0.004 };
   const shoot = (scene, people, c, look = LK, t = NOW) => {
-    cam.fov = c.fov; cam.position.set(...c.pos); if (c.fov >= 38 && c.fov <= 44 && !c.noClose) cam.position.lerp(V3(...c.look), 0.14);   // v8.3: closer, like the references
+    cam.fov = c.fov; cam.position.set(...c.pos); if (!c.noClose) cam.position.lerp(V3(...c.look), 0.14 * clamp((50 - c.fov) / 6));   // v9.2: continuous (an on/off switch made the camera jump)   // v8.3: closer, like the references
     cam.position.add(V3(Math.sin(t * 0.9) * 0.04, Math.sin(t * 1.3 + 1) * 0.03, Math.sin(t * 0.7 + 2) * 0.03));     // never perfectly still
     cam.lookAt(V3(...c.look)); cam.rotateZ(Math.sin(t * 0.6 + 0.5) * 0.008); cam.updateProjectionMatrix();
     people.forEach((q) => q.face(cam)); flockA.face(cam); flockD.face(cam);
