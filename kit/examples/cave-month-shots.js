@@ -64,7 +64,7 @@ export function buildShots(E) {
   const CAVE = new THREE.Scene(); CAVE.background = new THREE.Color('#121A30');
   WD.sunlight(CAVE, E, { col: '#D6E6FF', i: 2.4, pos: [0.5, 50, 0.5], target: [0, 0, 0], box: 12, sky: '#9AB0E0', ground: '#4A5478', hemi: 2.0 });
   CAVE.fog = new THREE.Fog('#1A2240', 18, 70);
-  const rockMat = WD.mat({ map: WD.T.strata(ROCK, 4, [4, 2]), color: '#B4BCD8', side: THREE.BackSide, roughness: 0.95 });
+  const rockMat = WD.mat({ map: WD.T.stone(['#7480B0', '#8490C0', '#6E78A6', '#8C96C2'], [12, 5], 10), color: '#D0D6EC', side: THREE.BackSide, roughness: 0.95 });
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.6, 42, 24, 12, true), rockMat); shaft.position.y = 31; shaft.receiveShadow = true; CAVE.add(shaft);
   const sky = new THREE.Mesh(new THREE.CircleGeometry(3.2, 32), new THREE.MeshBasicMaterial({ color: '#EAF4FF', toneMapped: false })); sky.rotation.x = Math.PI / 2; sky.position.y = 51.9; CAVE.add(sky);
   const hall = new THREE.Mesh(new THREE.CylinderGeometry(13, 14, 10, 40, 4, true), rockMat); hall.position.y = 5; hall.receiveShadow = true; CAVE.add(hall);
@@ -79,7 +79,7 @@ export function buildShots(E) {
   const crateA = box(0.7, 0.6, 0.6, crateM, 0.2, 0.3, -3.4, camp), crateB = box(0.7, 0.6, 0.6, crateM, 1.5, 0.3, -3.0, camp);
   const lampG = new THREE.Group(); lampG.position.set(0.2, 0.6, -3.4); camp.add(lampG);
   box(0.16, 0.04, 0.16, WD.mat({ color: '#B5372E' }), 0, 0.02, 0, lampG); const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.2, 12), new THREE.MeshStandardMaterial({ color: '#FFE7A0', emissive: '#FFC870', emissiveIntensity: 1.2 })); glass.position.y = 0.14; lampG.add(glass);
-  const lampL = new THREE.PointLight('#FFC870', 7, 9, 1.4); lampL.position.set(0.2, 1.1, -3.1); CAVE.add(lampL);
+  const lampL = new THREE.PointLight('#FFB45A', 11, 11, 1.3); lampL.position.set(0.2, 1.1, -3.1); CAVE.add(lampL);
   const phoneG = new THREE.Group(); phoneG.position.set(1.5, 0.6, -3.0); camp.add(phoneG);
   box(0.3, 0.14, 0.22, WD.mat({ color: '#2A2A33', roughness: 0.4 }), 0, 0.07, 0, phoneG); const hand = box(0.32, 0.06, 0.08, WD.mat({ color: '#1A1A20' }), 0, 0.17, 0, phoneG);
   CAVE.add(WD.wire(V3(1.5, 0.65, -3.0), V3(0.3, 52, 0.3), 0.0));
@@ -89,6 +89,20 @@ export function buildShots(E) {
     for (let i = 0; i < 70; i++) { const a = rn() * 6.283, r = 5 + rn() * 8, h = 0.6 + rn() * 2.4, w = 0.12 + rn() * 0.3; const c = new THREE.Mesh(new THREE.ConeGeometry(w, h, 7), sm); c.position.set(Math.cos(a) * r, 10 - h / 2, Math.sin(a) * r); c.rotation.x = Math.PI; c.castShadow = true; CAVE.add(c); }
     for (let i = 0; i < 46; i++) { const a = rn() * 6.283, r = 4.5 + rn() * 8, h = 0.25 + rn() * 1.3, w = 0.1 + rn() * 0.28; const ice = rn() < 0.4 || Math.sin(a) < -0.6; const c = new THREE.Mesh(new THREE.ConeGeometry(w, h, 6), ice ? im : sm); c.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r - 1); c.rotation.z = (rn() - 0.5) * 0.3; c.castShadow = c.receiveShadow = true; CAVE.add(c); }
     }
+  // v9 camp clutter (the reference films fill every set with small, specific things): sleeping bag, cans, books, rope, pack, socks on a line
+  { const add3 = (m) => { m.castShadow = m.receiveShadow = true; camp.add(m); return m; };
+    const bag = add3(new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 1.3, 6, 14), WD.mat({ color: '#3E8A5A' }))); bag.rotation.z = Math.PI / 2; bag.rotation.y = 0.5; bag.position.set(-0.6, 0.2, -2.95); bag.scale.set(1, 1, 0.6);
+    const pillow = add3(new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.25, 4, 10), WD.mat({ color: '#E8D8B0' }))); pillow.rotation.z = Math.PI / 2; pillow.position.set(-1.25, 0.2, -2.55);
+    const can = (x, y, z, col) => { const c = add3(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.13, 14), WD.mat({ color: col, metalness: 0.2, roughness: 0.5 }))); c.position.set(x, y, z); };
+    can(-0.05, 0.665, -3.25, '#D8343F'); can(0.42, 0.665, -3.5, '#F2C230'); can(0.5, 0.665, -3.28, '#3C6FB6'); can(2.0, 0.065, -2.7, '#D8343F');
+    [['#8E3A2E', 0.06], ['#2E5A8A', 0.05], ['#D8A83A', 0.045]].forEach(([col, hh], i) => { const b = add3(new THREE.Mesh(new THREE.BoxGeometry(0.34 - i * 0.03, hh, 0.24), WD.mat({ color: col }))); b.position.set(1.62, 0.6 + 0.03 + i * 0.055, -3.2); b.rotation.y = i * 0.25; });
+    const rope = add3(new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.05, 8, 28), WD.mat({ color: '#C8A060' }))); rope.rotation.x = Math.PI / 2; rope.position.set(-2.3, 0.05, -2.6);
+    const rope2 = add3(new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 8, 28), WD.mat({ color: '#B8904E' }))); rope2.rotation.x = Math.PI / 2; rope2.position.set(-2.3, 0.13, -2.6);
+    const pack = add3(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.3), WD.mat({ color: '#E2723A' }))); pack.position.set(-2.7, 0.33, -3.5); pack.rotation.y = 0.5;
+    const pk2 = add3(new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.12), WD.mat({ color: '#C85A2A' }))); pk2.position.set(-2.7 + 0.08, 0.25, -3.5 + 0.15); pk2.rotation.y = 0.5;
+    const pole = (x, z) => add3(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.7, 8), WD.mat({ color: '#9A9AA8', metalness: 0.4 }))).position.set(x, 0.85, z);
+    pole(-2.6, -4.4); pole(-0.2, -5.0); const line = add3(new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.47, 4), WD.mat({ color: '#EEE' }))); line.position.set(-1.4, 1.62, -4.7); line.rotation.z = Math.PI / 2; line.rotation.y = Math.atan2(0.6, 2.4);
+    ['#F2F2F2', '#D8343F', '#F2F2F2', '#3C6FB6'].forEach((col, i) => { const u = -2.3 + i * 0.6, z = -4.4 - (u + 2.6) / 2.4 * 0.6; const sk = add3(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.34, 0.04), WD.mat({ color: col }))); sk.position.set(u, 1.45, z); sk.rotation.y = Math.atan2(0.6, 2.4); const ft = add3(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.04), WD.mat({ color: col }))); ft.position.set(u + 0.05, 1.29, z); ft.rotation.y = Math.atan2(0.6, 2.4); }); }
   const puddle = new THREE.Mesh(new THREE.CircleGeometry(0.7, 24), new THREE.MeshStandardMaterial({ color: '#8EC3E4', roughness: 0.1, metalness: 0.2 })); puddle.rotation.x = -Math.PI / 2; puddle.position.set(0.8, 0.015, -1.6); CAVE.add(puddle);
 
   // ── SET 3: the surface team's tent: log book table, wall calendar, a clock under a cloth ──
@@ -138,7 +152,7 @@ export function buildShots(E) {
       hideAll(); into(CAVE, caver);
       const lines = [['NO CLOCK', t > cl + 0.2 ? '#FF8A80' : '#FFFFFF', 60, 90], ['NO CALENDAR', t > ca + 0.2 ? '#FF8A80' : '#FFFFFF', 56, 200], ['NO SUN', t > su + 0.2 ? '#FF8A80' : '#FFFFFF', 60, 310]];
       dayBoard.draw(t > te - 0.2 ? [['TENT', '#F2C230', 70, 90], ['LAMP', '#F2C230', 70, 200], ['PHONE', '#F2C230', 70, 310]] : lines);
-      glass.material.emissiveIntensity = t > la ? 1.2 : 0.1; lampL.intensity = t > la ? 7 : 0.5;
+      glass.material.emissiveIntensity = t > la ? 1.2 : 0.1; lampL.intensity = t > la ? 11 : 0.5;
       act(caver, 0.3, -1.8, { ...A.face(t, [[st, 'skeptic'], [su, 'sad'], [te, 'content'], [ph, 'happy']]), armR: A.arm(t, [[st, [80, 40]], [cl, [110, 30]], [ca, [80, 40]], [su, [110, 30]], [te, [150, -20]], [ph, [90, 60]]]), holdR: t > ph ? phoneProp : undefined, flush: 0.25, flushCol: COLD });
       const c = A.camPath(t, [
         [st, [3.3, 1.5, -1.5], [3.0, 1.35, -3.6], 42],

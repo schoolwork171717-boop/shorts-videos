@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 import scipy.io.wavfile as wf
 import scipy.signal as ss
+import pyworld as pw
 
 SR = 24000
 HOME = Path(os.environ.get('FACELESS_HOME', Path.home() / '.faceless-shorts'))
@@ -28,7 +29,7 @@ MODELS = {
     'asr': ('asr-models/sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8.tar.bz2', 'sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8'),
     'spk': ('speaker-recongition-models/wespeaker_en_voxceleb_resnet34.onnx', 'wespeaker_en_voxceleb_resnet34.onnx'),
 }
-TARGET_F0, TARGET_RANGE = 190.0, 5.9      # the reference narrator: median pitch (Hz), pitch movement (semitones std)
+TARGET_F0, TARGET_RANGE = 184.0, 5.9      # the reference narrator: median pitch (Hz), pitch movement (semitones std)
 
 
 def ensure_models():
@@ -76,8 +77,36 @@ def chunks_of(lines, max_words=28):
     return out
 
 
+def smooth(x, sr, target_f0=190.0, rate=1.0, fp=5.0):
+    """v9: WORLD re-voicing: move the chunk to the narrator's pitch, iron out pitch jitter, even out speaking rate."""
+    x = x.astype(np.float64)
+    f0, t = pw.harvest(x, sr, f0_floor=70, f0_ceil=420, frame_period=fp)
+    f0 = pw.stonemask(x, f0, t, sr)
+    sp = pw.cheaptrick(x, f0, t, sr); ap = pw.d4c(x, f0, t, sr)
+    v = f0 > 0
+    if v.sum() < 10: return x, 1.0
+    med = np.median(f0[v]); k = target_f0 / med
+    lf = np.zeros_like(f0); lf[v] = np.log(f0[v] * k)
+    # jitter: median-filter the log-pitch inside voiced runs, then a light smoothing (keeps intonation, removes wobble)
+    out = lf.copy(); idx = np.where(v)[0]
+    runs = np.split(idx, np.where(np.diff(idx) > 1)[0] + 1)
+    for r in runs:
+        if len(r) >= 5:
+            seg = ss.medfilt(lf[r], 5)
+            if len(r) >= 9: seg = ss.savgol_filter(seg, 9, 2)
+            out[r] = seg
+    f1 = np.where(v, np.exp(out), 0.0)
+    if abs(rate - 1.0) > 0.01:                      # time-scale: resample the frame sequence
+        n = len(f0); m = int(round(n / rate)); src = np.linspace(0, n - 1, m)
+        i0 = np.floor(src).astype(int); i1 = np.minimum(i0 + 1, n - 1); w = (src - i0)[:, None]
+        sp = sp[i0] * (1 - w) + sp[i1] * w; ap = ap[i0] * (1 - w) + ap[i1] * w
+        vv = (f1[i0] > 0) & (f1[i1] > 0); f1 = np.where(vv, f1[i0] * (1 - w[:, 0]) + f1[i1] * w[:, 0], np.where(f1[i0] > 0, f1[i0], 0))
+    y = pw.synthesize(np.ascontiguousarray(f1), np.ascontiguousarray(sp), np.ascontiguousarray(ap), sr, fp)
+    return y.astype(np.float32), k
+
+
 def main():
-    import sherpa_onnx as so, pyworld as pw
+    import sherpa_onnx as so
     if len(sys.argv) < 2: sys.exit(__doc__)
     ensure_models()
     P = Path(sys.argv[1]); S = json.loads((P / 'script.json').read_text())
@@ -171,6 +200,14 @@ def main():
             x = load(str(cw), SR).astype(np.float64); hw = json.loads(cj.read_text())['words']; print('   (kept)', flush=True)
         else:
             x, hw = take(text); wf.write(cw, SR, (np.clip(x, -1, 1) * 32767).astype(np.int16)); cj.write_text(json.dumps({'text': text, 'words': hw}))
+        # v9 smoothing: every chunk is re-voiced (WORLD) onto the narrator's exact pitch with the jitter ironed out, and
+        # (unless --keep-timing) gently re-timed to an even ~3.7 words/s, so chunk joins don't jump in pitch or pace
+        rate = 1.0
+        if S.get('smooth', True):
+            if keep is None: rate = float(np.clip(len(text.split()) / (len(x) / SR) / float(S.get('wps', 3.7)), 0.9, 1.1))
+            y2, k2 = smooth(x, SR, TARGET_F0, rate); x = (y2 / (np.sqrt(np.mean(y2 ** 2)) + 1e-9) * 0.08).astype(np.float64)
+            hw = [{**w, 's': w['s'] / rate} for w in hw]
+            print(f'   smoothed: pitch {12 * np.log2(k2):+.1f} st, pace x{rate:.2f}', flush=True)
         al = align(g, hw, len(x) / SR)
         # v8.1: cut the dead air the "..." prefix leaves before the first script word and after the last one
         # v8.4: cut only inside real silence. Head: the quietest 20 ms frame in the 0.3 s before the first script word;
@@ -188,7 +225,8 @@ def main():
             ws = [a for a in al if a[0] == li]
             lines[li] = {'i': li, 'text': S['lines'][li]['text'], 'start': round(t + max(0, ws[0][2] - 0.04), 3), 'end': round(t + ws[-1][3], 3)}
         words += [{'w': w, 'line': li, 's': round(t + s, 3), 'e': round(t + e, 3)} for li, w, s, e in al]
-        gap = np.zeros(int(float(S.get('gap', 0.05)) * SR)) if ci + 1 < len(groups) else np.zeros(0)
+        end_p = S['lines'][g[-1]]['text'].rstrip()[-1:] in '.!?'
+        gap = np.zeros(int(float(S.get('gap', 0.05)) * SR + (int(float(S.get('pause', 0.16)) * SR) if end_p else 0))) if ci + 1 < len(groups) else np.zeros(0)   # v9: a breath after a full stop
         if keep is not None: placed.append((keep[len(words) - len(al)]['s'] - al[0][2], x))
         out += [x, gap]; t += (len(x) + len(gap)) / SR
     out.append(np.zeros(int(float(S.get('outro', 0.6)) * SR)))

@@ -25,6 +25,17 @@ const cyl = (r1, r2, h, m, x, y, z, parent, seg = 12) => { const c = new THREE.M
 
 // ---------- painted textures ----------
 export const T = {
+  // v9: painted rock face - irregular stones with inked cracks, per-stone shade, speckle (for cave walls, cliffs, castles)
+  stone: (cols = ['#6A74A0', '#7A84B0', '#5E6890'], rep = [1, 1], cells = 9) => canvasTex('stone' + cols.join(), 512, 512, (g, w, h) => {
+    const P = []; for (let j = 0; j < cells; j++) for (let i = 0; i < cells; i++) P.push([(i + 0.15 + rnd(i * 7 + j * 13) * 0.7) / cells, (j + 0.15 + rnd(i * 3 + j * 29) * 0.7) / cells, i + j * cells]);
+    const id = g.createImageData(w, h), d = id.data, C = cols.map((c) => ({ r: parseInt(c.slice(1, 3), 16) / 255, g: parseInt(c.slice(3, 5), 16) / 255, b: parseInt(c.slice(5, 7), 16) / 255 }));
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const u = x / w, v = y / h; let d1 = 9, d2 = 9, k1 = 0;
+      for (const [px, py, k] of P) for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const dx = u - px - ox, dy = v - py - oy, dd = dx * dx + dy * dy; if (dd < d1) { d2 = d1; d1 = dd; k1 = k; } else if (dd < d2) d2 = dd; }
+      const e = Math.sqrt(d2) - Math.sqrt(d1), c = C[k1 % C.length], sh = 0.82 + rnd(k1 * 5.1) * 0.3 - Math.sqrt(d1) * 1.2 + (rnd(x * 1.3 + y * 7.7) - 0.5) * 0.08;
+      const crack = e < 0.006 ? 0.25 : e < 0.014 ? 0.6 : 1, o = (y * w + x) * 4;
+      d[o] = Math.min(255, c.r * 255 * sh * crack); d[o + 1] = Math.min(255, c.g * 255 * sh * crack); d[o + 2] = Math.min(255, c.b * 255 * sh * crack); d[o + 3] = 255; }
+    g.putImageData(id, 0, 0);
+  }, rep),
   planks: (col = '#A8693E', rep = [1, 1]) => canvasTex('planks' + col, 512, 512, (g, w, h) => {
     const n = 8, ph = h / n;
     for (let i = 0; i < n; i++) {
