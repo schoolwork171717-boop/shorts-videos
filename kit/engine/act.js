@@ -131,3 +131,51 @@ export function camPath(t, keys) {
   const f0 = keys[i][3] ?? 42, f1 = keys[i + 1][3] ?? 42;
   return { pos: cr(1), look: cr(2), fov: f0 + (f1 - f0) * s };
 }
+
+// v9 frameFix(cam, toons): the "graphics cut out" fix. After the camera is aimed, every cut-out person whose head is
+// on (or near) the screen gets their whole head (hat included) pulled inside a safe frame: the camera trucks sideways /
+// up-down (keeps its angle) and, if two heads can't both fit, dollies back (max +80%). People well off-screen are left
+// alone, people near the edge are blended in, so it never pops. Works for standing, lying (flat) and scaled people.
+export function frameFix(cam, toons, { mx = 0.84, top = 0.9, bottom = -0.82, maxIter = 6, maxBack = 0.8, extras = [] } = {}) {   // extras: signs/boards (Object3D) kept whole too
+  const V = cam.position.constructor, F = [[0, 0.995], [-0.26, 0.9], [0.26, 0.9], [-0.26, 0.7], [0.26, 0.7], [0, 0.66]];
+  let backed = 0;
+  for (let it = 0; it < maxIter; it++) {
+    cam.updateMatrixWorld(true); cam.updateProjectionMatrix();
+    let minX = 9, maxX = -9, minY = 9, maxY = -9, wsum = 0;
+    for (const p of toons) {
+      if (!p.group.visible || !p.group.parent || !p.H) continue; p.group.updateMatrixWorld(true);
+      const H = p.H, W = H / 2, off = H * 24 / 1024;
+      const pts = F.map(([x, y]) => p.mesh.localToWorld(new V(x * W, y * H - off, 0)).project(cam));
+      if (pts.some((q) => q.z > 1 || q.z < -1)) continue;
+      const cx = pts.reduce((a, q) => a + q.x, 0) / pts.length, cy = pts.reduce((a, q) => a + q.y, 0) / pts.length;
+      const w = 1 - clamp((Math.max(Math.abs(cx) - 1.0, Math.abs(cy) - 1.0) - 0.05) / 0.3); if (w <= 0) continue;
+      wsum = Math.max(wsum, w);
+      for (const q of pts) { minX = Math.min(minX, q.x * w + cx * (1 - w)); maxX = Math.max(maxX, q.x * w + cx * (1 - w)); minY = Math.min(minY, q.y); maxY = Math.max(maxY, q.y); }
+    }
+    for (const o of extras) {
+      if (!o.visible || !o.parent) continue;
+      o.updateMatrixWorld(true); const bb = { min: new V(9e9, 9e9, 9e9), max: new V(-9e9, -9e9, -9e9) };
+      o.traverse((m) => { if (!m.isMesh || !m.geometry) return; m.geometry.computeBoundingBox(); const g = m.geometry.boundingBox;
+        for (let i = 0; i < 8; i++) { const v = new V(i & 1 ? g.max.x : g.min.x, i & 2 ? g.max.y : g.min.y, i & 4 ? g.max.z : g.min.z).applyMatrix4(m.matrixWorld); bb.min.min(v); bb.max.max(v); } });
+      const pts = []; for (let i = 0; i < 8; i++) pts.push(new V(i & 1 ? bb.max.x : bb.min.x, i & 2 ? bb.max.y : bb.min.y, i & 4 ? bb.max.z : bb.min.z).project(cam));
+      if (pts.some((q) => q.z > 1 || q.z < -1)) continue; const top4 = pts.filter((_, i) => i & 2);
+      const cx = top4.reduce((a, q) => a + q.x, 0) / 4, cy = top4.reduce((a, q) => a + q.y, 0) / 4;
+      const w = 1 - clamp((Math.max(Math.abs(cx) - 0.75, Math.abs(cy) - 0.95) - 0.05) / 0.3); if (w <= 0) continue; wsum = Math.max(wsum, w);
+      for (const q of top4) { minX = Math.min(minX, q.x * w + cx * (1 - w)); maxX = Math.max(maxX, q.x * w + cx * (1 - w)); maxY = Math.max(maxY, q.y); }
+    }
+    if (wsum === 0) return;
+    let dx = 0, dy = 0;
+    if (maxX - minX > 2 * mx || maxY - minY > top - bottom) {
+      if (backed >= maxBack) return;
+      const fwd = new V(); cam.getWorldDirection(fwd); const step = 0.15; cam.position.addScaledVector(fwd, -step * 4); backed += step; continue;
+    }
+    if (maxX > mx) dx = maxX - mx; else if (minX < -mx) dx = minX + mx;
+    if (maxY > top) dy = maxY - top; else if (minY < bottom) dy = minY - bottom;
+    if (Math.abs(dx) < 0.004 && Math.abs(dy) < 0.004) return;
+    // NDC shift -> world truck at the subjects' depth
+    const d = Math.max(0.5, cam.position.length() > 0 ? new V().setFromMatrixPosition(toons.find((p) => p.group.visible && p.group.parent)?.mesh.matrixWorld ?? cam.matrixWorld).distanceTo(cam.position) : 3);
+    const hh = Math.tan((cam.fov * Math.PI) / 360) * d, ww = hh * cam.aspect;
+    const right = new V(1, 0, 0).applyQuaternion(cam.quaternion), up = new V(0, 1, 0).applyQuaternion(cam.quaternion);
+    cam.position.addScaledVector(right, dx * ww).addScaledVector(up, dy * hh);
+  }
+}
