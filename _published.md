@@ -10,3 +10,4 @@
 | 2026-11-05 | Baker-Miller pink jail cells (calming pink, later gray-cell tests) | Iron Canyon v7 | Why Jails Painted Their Cells Bubblegum Pink #shorts | https://youtube.com/shorts/Qzc-xidzcAc |
 | 2026-11-06 | Great Emu War (army vs emus, 1932) | Iron Canyon v8.3 | The Army That Lost a War to Birds #shorts | https://youtube.com/shorts/Z2XV3K6ZBnk |
 | 2026-11-06 | Ontario lottery store-clerk insider wins | Iron Canyon v8.4 | The Store Clerk Who Kept Winning the Lottery #shorts | https://youtube.com/shorts/cTxwzUSZugw |
+| 2026-11-07 | Safety coffins and grave bells | Iron Canyon v9 | Why Old Coffins Had Doorbells #shorts | https://youtube.com/shorts/UExiu5XxfVw |
