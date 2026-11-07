@@ -12,7 +12,7 @@ import { Toon, INK, PROPS } from './core/toon.js';
 import * as FX from './core/fx.js';
 
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
-let NOW = 0;
+let NOW = 0, FF = null;
 const LOOK = {
   caver: { body: '#D8343F', pattern: 'jacket', patCol: '#A82A30', hat: 'beanie', hatCol: '#3C6FB6', extra: ['beard'], beardCol: '#6A4A30', neck: 'scarf', neckCol: '#F2C230' },
   chief: { body: '#3C6FB6', pattern: 'vest', patCol: '#2E5A9A', hat: 'cap', hatCol: '#2A2830', extra: ['mustache', 'glasses'], mustacheCol: '#5A3A22' },
@@ -23,14 +23,14 @@ function pencilProp(g, x, y) { g.save(); g.translate(x, y); g.rotate(0.5); g.fil
 
 export function buildShots(E) {
   const S = [], CUES = [], cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
-  const add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; f(lt, d, t, blit); FX.motes(t, { n: o.cave ? 26 : 16, col: o.cave ? '200,230,255' : '255,240,210', size: 0.9 }); }; S.push(o); return o; };
+  const add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; FF = null; f(lt, d, t, blit); FX.motes(t, { n: o.cave ? 26 : 16, col: o.cave ? '200,230,255' : '255,240,210', size: 0.9 }); }; S.push(o); return o; };
   const cam = camera(42);
   const LK = { bloom: 0.18, bloomThreshold: 0.95, aperture: 0.0016, maxblur: 0.009 };
   const shoot = (scene, c, look = LK, t = NOW) => {
     cam.fov = c.fov; cam.position.set(...c.pos); if (c.fov >= 38 && c.fov <= 44) cam.position.lerp(V3(...c.look), 0.12);
     cam.position.add(V3(Math.sin(t * 0.9) * 0.03, Math.sin(t * 1.3 + 1) * 0.025, Math.sin(t * 0.7 + 2) * 0.025));
     cam.lookAt(V3(...c.look)); cam.rotateZ(Math.sin(t * 0.6 + 0.5) * 0.008); cam.updateProjectionMatrix();
-    all.forEach((q) => q.face(cam)); E.render(scene, cam, { ...look, focus: cam.position.distanceTo(V3(...c.look)), t });
+    all.forEach((q) => q.face(cam)); A.frameFix(cam, FF || all.filter((q) => q.group.parent === scene), { extras: FF ? [] : [dayBoard, calB, sept] }); all.forEach((q) => q.face(cam)); E.render(scene, cam, { ...look, focus: cam.position.distanceTo(V3(...c.look)), t });
   };
   const act = (p, x, z, o = {}, y = 0, k = 1) => {
     const al = A.alive(NOW, p.seed, 1), pf = A.perform(NOW, p.seed, o.energy ?? k, { talk: o.talk ?? 1 });
@@ -83,7 +83,7 @@ export function buildShots(E) {
   const phoneG = new THREE.Group(); phoneG.position.set(1.5, 0.6, -3.0); camp.add(phoneG);
   box(0.3, 0.14, 0.22, WD.mat({ color: '#2A2A33', roughness: 0.4 }), 0, 0.07, 0, phoneG); const hand = box(0.32, 0.06, 0.08, WD.mat({ color: '#1A1A20' }), 0, 0.17, 0, phoneG);
   CAVE.add(WD.wire(V3(1.5, 0.65, -3.0), V3(0.3, 52, 0.3), 0.0));
-  const dayBoard = ST.board(1.4, 0.9); dayBoard.position.set(3.0, 0, -3.6); dayBoard.rotation.y = -0.4; dayBoard.scale.setScalar(0.85); CAVE.add(dayBoard);
+  const dayBoard = ST.board(1.4, 0.9); dayBoard.position.set(2.15, 0, -3.35); dayBoard.rotation.y = -0.3; dayBoard.scale.setScalar(0.85); CAVE.add(dayBoard);
   // v9 set dressing: stalactites from the roof, stalagmites and ice spikes on the floor, pebbles round the camp
   { const sm = WD.mat({ color: '#7A84B0', roughness: 0.9 }), im = WD.mat({ color: '#CFEAF8', roughness: 0.3 }); let sd = 7; const rn = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < 70; i++) { const a = rn() * 6.283, r = 5 + rn() * 8, h = 0.6 + rn() * 2.4, w = 0.12 + rn() * 0.3; const c = new THREE.Mesh(new THREE.ConeGeometry(w, h, 7), sm); c.position.set(Math.cos(a) * r, 10 - h / 2, Math.sin(a) * r); c.rotation.x = Math.PI; c.castShadow = true; CAVE.add(c); }
@@ -153,9 +153,9 @@ export function buildShots(E) {
       const lines = [['NO CLOCK', t > cl + 0.2 ? '#FF8A80' : '#FFFFFF', 60, 90], ['NO CALENDAR', t > ca + 0.2 ? '#FF8A80' : '#FFFFFF', 56, 200], ['NO SUN', t > su + 0.2 ? '#FF8A80' : '#FFFFFF', 60, 310]];
       dayBoard.draw(t > te - 0.2 ? [['TENT', '#F2C230', 70, 90], ['LAMP', '#F2C230', 70, 200], ['PHONE', '#F2C230', 70, 310]] : lines);
       glass.material.emissiveIntensity = t > la ? 1.2 : 0.1; lampL.intensity = t > la ? 11 : 0.5;
-      act(caver, 0.3, -1.8, { ...A.face(t, [[st, 'skeptic'], [su, 'sad'], [te, 'content'], [ph, 'happy']]), armR: A.arm(t, [[st, [80, 40]], [cl, [110, 30]], [ca, [80, 40]], [su, [110, 30]], [te, [150, -20]], [ph, [90, 60]]]), holdR: t > ph ? phoneProp : undefined, flush: 0.25, flushCol: COLD });
+      act(caver, 0.8, -1.8, { ...A.face(t, [[st, 'skeptic'], [su, 'sad'], [te, 'content'], [ph, 'happy']]), armR: A.arm(t, [[st, [80, 40]], [cl, [110, 30]], [ca, [80, 40]], [su, [110, 30]], [te, [150, -20]], [ph, [90, 60]]]), holdR: t > ph ? phoneProp : undefined, flush: 0.25, flushCol: COLD });
       const c = A.camPath(t, [
-        [st, [3.3, 1.5, -1.5], [3.0, 1.35, -3.6], 42],
+        [st, [1.6, 1.7, 1.4], [1.6, 1.3, -2.8], 46],
         [te - 0.1, [1.8, 2.0, 1.2], [0.4, 0.9, -3.2], 46],
         [end, [1.6, 1.7, 0.6], [1.0, 1.4, -2.0], 40],
       ]);
@@ -196,8 +196,8 @@ export function buildShots(E) {
     add({ id: 'S5', at: st, cave: true, note: 'on the phone he counts on his fingers; his board ticks up painfully slowly; on "five minutes" it reads 120 = 5 MINUTES and he scratches his head', draw(lt, d, t, blit) {
       hideAll(); into(CAVE, caver);
       const n = t < co ? 0 : Math.min(120, Math.floor((t - co) * 6)); dayBoard.draw(t > fi - 0.1 ? [['COUNT TO 120', '#FFFFFF', 54, 90], ['TOOK HIM', '#FFFFFF', 54, 200], ['5 MINUTES', '#FF8A80', 76, 310]] : [['COUNTING...', '#FFFFFF', 56, 100], [String(n), '#F2C230', 150, 270]]);
-      act(caver, 1.2, -2.0, { ...A.face(t, [[st, 'content'], [co, 'scheme'], [fi, 'gasp']]), holdR: phoneProp, armR: [100, 150], armL: A.arm(t, [...Array(8)].map((_, k) => [co + k * 0.45, k % 2 ? [110, 20] : [80, 50]])), ...A.react('shrug', t, fi + 0.2, 1.0), flush: 0.25, flushCol: COLD });
-      const c = A.camPath(t, [[st, [2.2, 1.8, 0.6], [1.6, 1.4, -2.2], 42], [it - 0.2, [3.2, 1.6, -1.0], [3.0, 1.2, -3.6], 40], [end, [2.6, 1.8, 0.2], [2.0, 1.3, -2.8], 46]]);
+      act(caver, 1.0, -1.9, { ...A.face(t, [[st, 'content'], [co, 'scheme'], [fi, 'gasp']]), holdR: phoneProp, armR: [100, 150], armL: A.arm(t, [...Array(8)].map((_, k) => [co + k * 0.45, k % 2 ? [110, 20] : [80, 50]])), ...A.react('shrug', t, fi + 0.2, 1.0), flush: 0.25, flushCol: COLD });
+      const c = A.camPath(t, [[st, [1.4, 1.75, 1.0], [1.0, 1.4, -2.0], 42], [co + 0.5, [1.9, 1.7, 1.4], [1.6, 1.3, -2.8], 46], [end, [1.8, 1.7, 1.2], [1.5, 1.3, -2.7], 44]]);
       shoot(CAVE, c); blit();
     } });
     cue(Wd('five', 6), 'boing', { gain: 0.35 }); }
@@ -209,7 +209,7 @@ export function buildShots(E) {
       const ringing = t > ra - 0.2 && t < ov; hand.position.y = 0.17 + (ringing ? Math.abs(Math.sin(t * 40)) * 0.04 : 0); phoneG.rotation.z = ringing ? Math.sin(t * 50) * 0.05 : 0;
       dayBoard.draw([['HIS COUNT:', '#FFFFFF', 54, 90], ['AUGUST', '#F2C230', 76, 200], ['20', '#F2C230', 110, 310]]);
       act(caver, 1.0, -1.9, { ...A.face(t, [[st, 'tired'], [ra, 'shock'], [ov, 'gasp'], [co, 'skeptic'], [au, 'worried'], [mo, 'dizzy']]), holdR: t > ov - 0.2 ? phoneProp : undefined, armR: t > ov - 0.2 ? [100, 150] : [30, 30], hopY: A.hop(t, ra, 0.4, 0.3), ...A.react('shock', t, ra, 0.5), ...A.react('shrug', t, mo, 1.0), flush: 0.25, flushCol: COLD });
-      const c = A.camPath(t, [[st, [2.6, 1.6, 0.2], [1.5, 0.9, -3.0], 42], [ov, [1.8, 1.75, 0.6], [1.0, 1.45, -1.9], 40], [au, [3.0, 1.7, -0.6], [2.8, 1.2, -3.6], 42], [end, [2.0, 1.75, 0.8], [1.6, 1.4, -2.6], 44]]);
+      const c = A.camPath(t, [[st, [2.6, 1.6, 0.2], [1.5, 0.9, -3.0], 42], [ov, [1.8, 1.75, 0.6], [1.0, 1.45, -1.9], 40], [au, [1.9, 1.7, 1.4], [1.6, 1.3, -2.8], 46], [end, [1.8, 1.75, 1.0], [1.4, 1.4, -2.4], 44]]);
       shoot(CAVE, c); blit(); if (ringing) { const [x, y] = proj(V3(1.5, 0.9, -3.0)); ringLines(x, y, t, 1); }
     } });
     cue(Wd('rang', 7) - 0.2, 'alarm', { gain: 0.25 }); cue(Wd('rang', 7) + 0.1, 'alarm', { gain: 0.25 }); cue(L(8) + 0.1, 'boing', { gain: 0.3 }); cue(Wd('august', 8), 'slide', { gain: 0.3 }); }
@@ -233,8 +233,9 @@ export function buildShots(E) {
       hideAll(); into(TOP, caver, chief, aide); legs.forEach((l) => (l.visible = false));
       const rise = eo(clamp((t - st) / 1.6));
       act(caver, lerp(0.0, 0.9, eo(clamp((t - cl - 1.0) / 0.8))), lerp(0.0, 0.6, eo(clamp((t - cl - 1.0) / 0.8))), { ...A.face(t, [[st, 'strain'], [go, 'happy'], [hi, 'content'], [br, 'skeptic'], [tw, 'gasp']]), armR: t < cl + 1 ? [170, 0] : A.arm(t, [[cl + 1, [40, 40]], [tw, [110, 30]]]), armL: t < cl + 1 ? [170, 0] : [30, 30], ...A.react('shrug', t, tw + 0.4, 1.0) }, lerp(-1.8, 0, rise));
-      act(chief, 3.0, -0.4, { ...A.face(t, [[st, 'excited'], [su, 'laugh']]), ...A.react('cheer', t, go, 1.0) });
-      act(aide, -1.3, -0.5, { ...A.face(t, [[st, 'excited'], [su, 'happy']]), ...A.react('cheer', t, go + 0.2, 1.0) });
+      act(chief, t > hi - 0.5 ? 4.6 : 3.0, -0.4, { ...A.face(t, [[st, 'excited'], [su, 'laugh']]), ...A.react('cheer', t, go, 1.0) });
+      act(aide, t > hi - 0.5 ? -3.2 : -1.3, -0.5, { ...A.face(t, [[st, 'excited'], [su, 'happy']]), ...A.react('cheer', t, go + 0.2, 1.0) });
+      if (t > hi - 0.5) { FF = [caver]; chief.group.visible = aide.group.visible = false; }
       const c = A.camPath(t, [[st, [1.6, 1.3, 3.4], [0.2, 1.0, 0.0], 46], [su, [1.2, 1.8, 5.2], [0.6, 1.2, -0.3], 48], [hi + 0.3, [1.5, 1.7, 4.4], [1.4, 1.35, -0.6], 46], [end, [1.3, 1.65, 4.0], [1.2, 1.35, -0.7], 46]]);
       shoot(TOP, c);
       blit(); goggles(caver, 1.47); glare((1 - clamp((t - st) / 1.2)) * 0.9);
