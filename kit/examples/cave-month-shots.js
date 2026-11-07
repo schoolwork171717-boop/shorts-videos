@@ -25,7 +25,7 @@ export function buildShots(E) {
   const S = [], CUES = [], cue = (t, type, o = {}) => CUES.push({ t: +Math.max(0, t).toFixed(3), type, ...o });
   const add = (o) => { const f = o.draw; o.draw = (lt, d, t, blit) => { NOW = t; f(lt, d, t, blit); FX.motes(t, { n: o.cave ? 26 : 16, col: o.cave ? '200,230,255' : '255,240,210', size: 0.9 }); }; S.push(o); return o; };
   const cam = camera(42);
-  const LK = { bloom: 0.18, bloomThreshold: 0.95, aperture: 0.0005, maxblur: 0.005 };
+  const LK = { bloom: 0.18, bloomThreshold: 0.95, aperture: 0.0016, maxblur: 0.009 };
   const shoot = (scene, c, look = LK, t = NOW) => {
     cam.fov = c.fov; cam.position.set(...c.pos); if (c.fov >= 38 && c.fov <= 44) cam.position.lerp(V3(...c.look), 0.12);
     cam.position.add(V3(Math.sin(t * 0.9) * 0.03, Math.sin(t * 1.3 + 1) * 0.025, Math.sin(t * 0.7 + 2) * 0.025));
@@ -62,7 +62,7 @@ export function buildShots(E) {
 
   // ── SET 2: the cave: a shaft from a daylight hole down to an ice hall with tent, lamp, phone and his day board ──
   const CAVE = new THREE.Scene(); CAVE.background = new THREE.Color('#121A30');
-  WD.sunlight(CAVE, E, { col: '#BFD9FF', i: 1.6, pos: [0.5, 50, 0.5], target: [0, 0, 0], box: 12, sky: '#6A80B8', ground: '#2A3048', hemi: 1.3 });
+  WD.sunlight(CAVE, E, { col: '#D6E6FF', i: 2.4, pos: [0.5, 50, 0.5], target: [0, 0, 0], box: 12, sky: '#9AB0E0', ground: '#4A5478', hemi: 2.0 });
   CAVE.fog = new THREE.Fog('#1A2240', 18, 70);
   const rockMat = WD.mat({ map: WD.T.strata(ROCK, 4, [4, 2]), color: '#B4BCD8', side: THREE.BackSide, roughness: 0.95 });
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.6, 42, 24, 12, true), rockMat); shaft.position.y = 31; shaft.receiveShadow = true; CAVE.add(shaft);
@@ -71,7 +71,7 @@ export function buildShots(E) {
   const roof = new THREE.Mesh(new THREE.RingGeometry(3.5, 14, 40), WD.mat({ color: '#3A4260', side: THREE.DoubleSide })); roof.rotation.x = Math.PI / 2; roof.position.y = 10; CAVE.add(roof);
   const floor = new THREE.Mesh(new THREE.CircleGeometry(14, 48), WD.mat({ map: WD.T.dirt('#5A6280', [8, 8], false) })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; CAVE.add(floor);
   const glacier = CY.cliff({ w: 22, h: 10, y0: 0, ledge: 1.3, setback: 0.2, rough: 0.5, seed: 12, seg: [80, 40], rim: 0, pal: ICE }); glacier.position.set(0, 0, -9.5); CAVE.add(glacier);
-  const iceGlow = new THREE.PointLight('#9FD8FF', 8, 16, 1.2); iceGlow.position.set(0, 4, -6); CAVE.add(iceGlow);
+  const iceGlow = new THREE.PointLight('#9FD8FF', 12, 18, 1.2); iceGlow.position.set(0, 4, -6); CAVE.add(iceGlow);
   CAVE.add(CY.rocks(300, [-10, 10, -8, 8], 0, ['#6A74A0', '#4E587A', '#7A84B0']));
   const camp = new THREE.Group(); CAVE.add(camp);
   tent(camp, -1.3, -3.9, '#C8372E', 0.8);
@@ -84,6 +84,11 @@ export function buildShots(E) {
   box(0.3, 0.14, 0.22, WD.mat({ color: '#2A2A33', roughness: 0.4 }), 0, 0.07, 0, phoneG); const hand = box(0.32, 0.06, 0.08, WD.mat({ color: '#1A1A20' }), 0, 0.17, 0, phoneG);
   CAVE.add(WD.wire(V3(1.5, 0.65, -3.0), V3(0.3, 52, 0.3), 0.0));
   const dayBoard = ST.board(1.4, 0.9); dayBoard.position.set(3.0, 0, -3.6); dayBoard.rotation.y = -0.4; dayBoard.scale.setScalar(0.85); CAVE.add(dayBoard);
+  // v9 set dressing: stalactites from the roof, stalagmites and ice spikes on the floor, pebbles round the camp
+  { const sm = WD.mat({ color: '#7A84B0', roughness: 0.9 }), im = WD.mat({ color: '#CFEAF8', roughness: 0.3 }); let sd = 7; const rn = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 70; i++) { const a = rn() * 6.283, r = 5 + rn() * 8, h = 0.6 + rn() * 2.4, w = 0.12 + rn() * 0.3; const c = new THREE.Mesh(new THREE.ConeGeometry(w, h, 7), sm); c.position.set(Math.cos(a) * r, 10 - h / 2, Math.sin(a) * r); c.rotation.x = Math.PI; c.castShadow = true; CAVE.add(c); }
+    for (let i = 0; i < 46; i++) { const a = rn() * 6.283, r = 4.5 + rn() * 8, h = 0.25 + rn() * 1.3, w = 0.1 + rn() * 0.28; const ice = rn() < 0.4 || Math.sin(a) < -0.6; const c = new THREE.Mesh(new THREE.ConeGeometry(w, h, 6), ice ? im : sm); c.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r - 1); c.rotation.z = (rn() - 0.5) * 0.3; c.castShadow = c.receiveShadow = true; CAVE.add(c); }
+    }
   const puddle = new THREE.Mesh(new THREE.CircleGeometry(0.7, 24), new THREE.MeshStandardMaterial({ color: '#8EC3E4', roughness: 0.1, metalness: 0.2 })); puddle.rotation.x = -Math.PI / 2; puddle.position.set(0.8, 0.015, -1.6); CAVE.add(puddle);
 
   // ── SET 3: the surface team's tent: log book table, wall calendar, a clock under a cloth ──

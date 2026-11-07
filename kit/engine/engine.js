@@ -16,23 +16,35 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const INK = {
   uniforms: { tDiffuse: { value: null }, tNormal: { value: null }, tDepth: { value: null }, uPx: { value: new THREE.Vector2(1, 1) },
     uNear: { value: 0.05 }, uFar: { value: 800 }, uInk: { value: new THREE.Color('#1F1C33') }, uStrength: { value: 0.9 },
-    uFadeNear: { value: 12 }, uFadeFar: { value: 120 }, uDepthK: { value: 0.04 }, uNormK: { value: 0.5 } },
+    uFadeNear: { value: 12 }, uFadeFar: { value: 120 }, uDepthK: { value: 0.04 }, uNormK: { value: 0.25 }, uAO: { value: 0.35 }, uWob: { value: 0.6 }, uSky: { value: 1.0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse, tNormal, tDepth; uniform vec2 uPx; uniform float uNear, uFar, uStrength, uFadeNear, uFadeFar, uDepthK, uNormK; uniform vec3 uInk; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse, tNormal, tDepth; uniform vec2 uPx; uniform float uNear, uFar, uStrength, uFadeNear, uFadeFar, uDepthK, uNormK, uAO, uWob, uSky; uniform vec3 uInk; varying vec2 vUv;
     float lin(float d){ return (uNear * uFar) / (uFar - d * (uFar - uNear)); }
-    void main(){ vec4 c = texture2D(tDiffuse, vUv); vec4 nc = texture2D(tNormal, vUv);
-      if (nc.a < 0.75) { gl_FragColor = c; return; }                       // sky or a cut-out person: no ink here
-      float z = lin(texture2D(tDepth, vUv).x); vec3 n = nc.xyz * 2.0 - 1.0; float e = 0.0;
-      for (int i = 0; i < 4; i++) { vec2 o = i == 0 ? vec2(1.0, 0.0) : i == 1 ? vec2(-1.0, 0.0) : i == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0);
-        vec2 uv2 = vUv + o * uPx; vec4 ni = texture2D(tNormal, uv2);
-        if (ni.a < 0.1) { e = 1.0; continue; }                               // silhouette against the sky
-        if (ni.a < 0.75) continue;                                          // next to a cut-out: it has its own ink
-        float zi = lin(texture2D(tDepth, uv2).x);
-        float de = (zi - z) / max(z, 0.05);                                 // only the nearer side of a depth step gets ink
-        float ne = 1.0 - dot(ni.xyz * 2.0 - 1.0, n);
+    float hh(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + vec2(1, 1)), f.x), f.y); }
+    float edgeAt(vec2 uv, vec3 n, float z, vec2 px){ float e = 0.0;
+      for (int i = 0; i < 8; i++) { float a = float(i) * 0.785398; vec2 uv2 = uv + vec2(cos(a), sin(a)) * px; vec4 ni = texture2D(tNormal, uv2);
+        if (ni.a < 0.1) { e = max(e, uSky); continue; } if (ni.a < 0.75) continue;
+        float zi = lin(texture2D(tDepth, uv2).x); float de = (zi - z) / max(z, 0.05); float ne = 1.0 - dot(ni.xyz * 2.0 - 1.0, n);
         e = max(e, max(smoothstep(uDepthK, uDepthK * 2.5, de), smoothstep(uNormK, uNormK * 1.8, ne))); }
+      return e; }
+    void main(){ vec4 c = texture2D(tDiffuse, vUv); vec4 nc = texture2D(tNormal, vUv);
+      if (nc.a < 0.75) { gl_FragColor = c; return; }
+      vec2 wob = (vec2(vn(vUv * vec2(90.0, 160.0)), vn(vUv * vec2(90.0, 160.0) + 17.3)) - 0.5) * uPx * uWob;   // v9: hand-drawn wobble
+      vec2 uv = vUv + wob; float z = lin(texture2D(tDepth, uv).x); vec3 n = nc.xyz * 2.0 - 1.0;
+      float lw = 0.75 + 0.5 * vn(vUv * vec2(40.0, 70.0));                                                        // v9: line weight varies like a pen
+      float e = max(edgeAt(uv, n, z, uPx * lw), 0.6 * edgeAt(uv, n, z, uPx * lw * 2.0));
+      // v9: screen-space ambient occlusion from the same depth: crevices, corners and contact points go soft-dark
+      float occ = 0.0, iz = 1.0 / z; float r = clamp(0.7 / z, 0.004, 0.04); float rot = hh(vUv * 911.0) * 6.283;
+      for (int i = 0; i < 6; i++) { float a = float(i) * 0.5236 + rot; float rr = r * (0.35 + 0.65 * fract(float(i) * 0.618 + 0.3));
+        vec2 o = vec2(cos(a), sin(a) * 0.5625) * rr; vec4 n1 = texture2D(tNormal, vUv + o), n2 = texture2D(tNormal, vUv - o);
+        if (n1.a < 0.75 || n2.a < 0.75) continue;
+        float m = 0.5 * (1.0 / lin(texture2D(tDepth, vUv + o).x) + 1.0 / lin(texture2D(tDepth, vUv - o).x));   // a plane keeps 1/z affine: the pair mean = centre
+        float k = (m - iz) / iz; occ += smoothstep(0.006, 0.045, k) * (1.0 - smoothstep(0.07, 0.18, k)); }
+      occ = clamp(occ / 6.0 * 1.5, 0.0, 1.0);
       float fade = 1.0 - smoothstep(uFadeNear, uFadeFar, z);
-      c.rgb = mix(c.rgb, uInk, e * uStrength * (0.3 + 0.7 * fade));
+      c.rgb *= 1.0 - uAO * occ * (0.4 + 0.6 * fade);
+      c.rgb = mix(c.rgb, uInk, e * uStrength * (0.35 + 0.65 * fade));
       gl_FragColor = c; }`,
 };
 const GRAD = (() => { const d = new Uint8Array([120, 120, 120, 255, 175, 175, 175, 255, 220, 220, 220, 255, 255, 255, 255, 255]); const t = new THREE.DataTexture(d, 4, 1, THREE.RGBAFormat); t.minFilter = t.magFilter = THREE.LinearFilter; t.needsUpdate = true; return t; })();
@@ -109,10 +121,12 @@ export function makeEngine(canvas, { w = W, h = H, samples = 4, shadowSize = 204
   // normal + depth target for the ink pass
   const nrt = new THREE.WebGLRenderTarget(w, h, { type: THREE.UnsignedByteType }); nrt.depthTexture = new THREE.DepthTexture(w, h); nrt.depthTexture.type = THREE.UnsignedIntType;
   const nmat = new THREE.MeshNormalMaterial(); const clear = new THREE.Color(0, 0, 0);
-  const ink = new ShaderPass(INK); ink.uniforms.tNormal.value = nrt.texture; ink.uniforms.tDepth.value = nrt.depthTexture; ink.uniforms.uPx.value.set(1.6 / w, 1.6 / h); composer.addPass(ink);
+  const ink = new ShaderPass(INK); ink.uniforms.tNormal.value = nrt.texture; ink.uniforms.tDepth.value = nrt.depthTexture; ink.uniforms.uPx.value.set(2.2 / w, 2.2 / h); composer.addPass(ink);
   const hidden = [];
   const masks = new WeakMap();
-  const maskOf = (m) => { if (masks.has(m)) return masks.get(m); const k = new THREE.MeshBasicMaterial({ color: '#000000', map: m.map, transparent: false, opacity: 0.5, alphaTest: 0.25, side: THREE.DoubleSide }); masks.set(m, k); return k; };
+  const maskOf = (m) => { if (masks.has(m)) return masks.get(m); const k = new THREE.ShaderMaterial({ uniforms: { map: { value: m.map } }, side: THREE.DoubleSide, blending: THREE.NoBlending,   // v9: cut-outs write alpha 0.5 so the ink pass skips them (they have their own line)
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D map; varying vec2 vUv; void main(){ if (texture2D(map, vUv).a < 0.5) discard; gl_FragColor = vec4(0.5, 0.5, 1.0, 0.5); }' }); masks.set(m, k); return k; };
   const swapped = [];
   const normalPass = (scene, cam) => {
     hidden.length = 0; swapped.length = 0;
