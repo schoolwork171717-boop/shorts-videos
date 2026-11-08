@@ -297,6 +297,69 @@ def trades(mode=None, rng="night", before=None, limit=50):
             "readiness": {"items": ready, "ready": all(i["ok"] for i in ready), "burnerUsd": 42}}
 
 
+# ------------------------------------------------------------------ live (separate real-time app at /live/)
+STARTED = time.time()
+
+
+def _history(limit=120):
+    """Tonight's decisions from the db in the SSE event shape (the tape before this process started)."""
+    ns = db.night_start()
+    nm = lambda m, n: n or util.short(m)  # noqa: E731
+    ev = []
+    for r in db.q("SELECT s.*, c.name FROM scans s LEFT JOIN coins c USING(mint) WHERE s.ts>=? ORDER BY s.ts DESC LIMIT ?", (ns, limit)):
+        ev.append({"kind": "scan", "ts": r["ts"], "data": {"mint": r["mint"], "name": nm(r["mint"], r["name"]), "verdict": r["verdict"],
+                                                           "reason": r["reason"], "liquidityUsd": r["liquidity_usd"]}})
+    for r in db.q("SELECT a.mint, MAX(a.ts) ts, MIN(a.pass) ok, COUNT(*) n, c.name, (SELECT value_text FROM audits b WHERE b.mint=a.mint "
+                  "AND b.pass=0 ORDER BY b.ts DESC LIMIT 1) reason FROM audits a LEFT JOIN coins c USING(mint) WHERE a.ts>=? "
+                  "GROUP BY a.mint ORDER BY ts DESC LIMIT ?", (ns, limit)):
+        ev.append({"kind": "audit", "ts": r["ts"], "data": {"mint": r["mint"], "name": nm(r["mint"], r["name"]),
+                                                            "passed": bool(r["ok"]) and r["n"] >= 8, "reason": r["reason"]}})
+    for r in db.q("SELECT v.*, c.name FROM verdicts v LEFT JOIN coins c USING(mint) WHERE v.ts>=? ORDER BY v.ts DESC LIMIT ?", (ns, limit)):
+        ev.append({"kind": "verdict", "ts": r["ts"], "data": {"mint": r["mint"], "name": nm(r["mint"], r["name"]), "score": r["score"],
+                                                              "passed": bool(r["pass"]), "failed": [r["reason"]] if r["reason"] else [],
+                                                              "model": r["model"]}})
+    for r in db.q("SELECT g.*, c.name FROM signals g LEFT JOIN coins c USING(mint) WHERE g.ts>=? ORDER BY g.ts DESC LIMIT ?", (ns, limit)):
+        ev.append({"kind": "signal", "ts": r["ts"], "data": {"mint": r["mint"], "name": nm(r["mint"], r["name"]), "sizeUsd": r["size_usd"],
+                                                             "stackPct": r["stack_pct"], "status": r["status"], "reason": r["reason"],
+                                                             "mode": r["mode"]}})
+    for r in db.q("SELECT p.*, c.name FROM positions p LEFT JOIN coins c USING(mint) WHERE p.opened_at>=?", (ns,)):
+        ev.append({"kind": "fill", "ts": r["opened_at"], "data": {"mint": r["mint"], "name": nm(r["mint"], r["name"]),
+                                                                  "sizeUsd": r["size_usd"], "price": r["entry_price"], "mode": r["mode"]}})
+        if r["exit_reason"]:
+            ev.append({"kind": "exit", "ts": r["exiting_at"] or r["closed_at"], "data": {
+                "mint": r["mint"], "name": nm(r["mint"], r["name"]), "reason": r["exit_reason"], "pnlUsd": r["pnl_usd"],
+                "pct": round(100 * (r["pnl_usd"] or 0) / r["size_usd"], 2), "status": "closed" if r["closed_at"] else "exiting"}})
+    return ev
+
+
+def live():
+    ns = db.night_start()
+    st = state()
+    tr = trades(st["mode"], "night", limit=12)
+    c = lambda sql, *a: db.q1(sql, (ns, *a))["c"]  # noqa: E731
+    funnel = {"heard": c("SELECT COUNT(*) c FROM coins WHERE seen_at>=?"),
+              "waiting": len(desk.agents["scanner"].room) if desk else 0,
+              "scannerPass": c("SELECT COUNT(*) c FROM scans WHERE ts>=? AND verdict='pass'"),
+              "scannerKill": c("SELECT COUNT(*) c FROM scans WHERE ts>=? AND verdict='kill'"),
+              "audited": c("SELECT COUNT(DISTINCT mint) c FROM audits WHERE ts>=?"),
+              "cleared": c("SELECT COUNT(*) c FROM (SELECT mint FROM audits WHERE ts>=? GROUP BY mint HAVING MIN(pass)=1 AND COUNT(*)>=8)"),
+              "scored": c("SELECT COUNT(*) c FROM verdicts WHERE ts>=?"),
+              "analystPass": c("SELECT COUNT(*) c FROM verdicts WHERE ts>=? AND pass=1"),
+              "pushed": c("SELECT COUNT(*) c FROM signals WHERE ts>=? AND status!='skipped'"),
+              "filled": c("SELECT COUNT(*) c FROM positions WHERE opened_at>=?"),
+              "exited": c("SELECT COUNT(*) c FROM positions WHERE opened_at>=? AND closed_at IS NOT NULL")}
+    events = [e for e in _history() if e["ts"] < STARTED] + [e for e in bus.recent if e["kind"] not in ("balance", "price")]
+    events.sort(key=lambda e: e["ts"], reverse=True)
+    return {"state": st, "trades": tr, "funnel": funnel, "events": events[:250], "serverTime": time.time(),
+            "risk": {"stopPct": config.get("risk.stop_pct"), "trailPct": config.get("risk.trail_pct"),
+                     "timeoutH": config.get("risk.timeout_h")}}
+
+
+@app.get("/api/live", dependencies=A)
+def api_live():
+    return live()
+
+
 @app.get("/api/trades", dependencies=A)
 def api_trades(mode: str | None = None, range: str = "night", before: int | None = None):  # noqa: A002
     if range not in ("night", "7d", "all"):

@@ -102,6 +102,9 @@ class Risk(Agent):
                 continue
             reason = evaluate(p, price, now)
             db.x("UPDATE positions SET peak_price=?, trail_active=? WHERE id=?", (p["peak_price"], p["trail_active"], p["id"]))
+            bus.emit("price", {"mint": p["mint"], "name": name, "positionId": p["id"], "price": price, "entry": p["entry_price"],
+                               "unrealized": round(p["size_usd"] * (price / p["entry_price"] - 1), 2), "exitLine": exit_line(p),
+                               "peak": p["peak_price"], "trailActive": bool(p["trail_active"])})
             self.log.info("pos=%s mint=%s price=%.10g peak=%.10g stop=%.10g trail_line=%s action=%s", p["id"], p["mint"], price,
                           p["peak_price"], p["stop_price"],
                           f"{p['peak_price'] * (1 - config.get('risk.trail_pct') / 100):.10g}" if p["trail_active"] else "off",

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Grok Bot Live">
+<meta name="theme-color" content="#000000">
+<meta name="referrer" content="no-referrer">
+<title>Grok Bot Live</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="live.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">Grok Bot <b>Live</b> <span class="pill paper" id="mode" hidden>PAPER</span></div>
+  <div class="conn"><i id="dot"></i><span id="conn">connecting…</span><span class="sep">·</span><span id="clock"></span></div>
+</header>
+<div id="offline" class="offline" hidden></div>
+<main id="main">
+  <section class="kpis" id="kpis"></section>
+  <div class="grid">
+    <div class="col">
+      <section class="card"><div class="hd"><h2>Balance</h2><span class="muted" id="bal-sub"></span></div><canvas id="chart" class="chart"></canvas></section>
+      <section class="card"><div class="hd"><h2>Open positions</h2><span class="muted" id="open-n"></span></div><div id="open"></div></section>
+      <section class="card"><div class="hd"><h2>Trades tonight</h2><a class="muted" href="../#/trades">All trades ›</a></div><div id="closed"></div></section>
+    </div>
+    <div class="col">
+      <section class="card"><div class="hd"><h2>Agents now</h2></div><div id="agents" class="agents"></div></section>
+      <section class="card"><div class="hd"><h2>Tonight's funnel</h2></div><div id="funnel" class="funnel"></div></section>
+      <section class="card tape"><div class="hd"><h2>Live tape</h2><div class="chips" id="chips"></div></div><div id="tape"></div></section>
+    </div>
+  </div>
+</main>
+<div id="locked" class="locked" hidden>This desk is private. Open it once from your own link (your URL + <code>/live/#t=…</code>), or open the main app first on this device.</div>
+<script src="/config.js"></script>
+<script src="../chart.js"></script>
+<script src="live.js"></script>
+</body>
+</html>

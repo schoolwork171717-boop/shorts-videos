@@ -86,7 +86,7 @@ def test_api_responses_pushes_account_page(desk_env):
     urls = []
     for path in ["/api/state", "/api/account", "/api/activity", f"/api/coin/{m}", f"/api/audit/{m}", "/api/audits/latest",
                  "/api/agents/scanner/decisions", "/api/agents/auditor/decisions", "/api/agents/executor/decisions",
-                 f"/api/search?q=Elys", "/api/chart", "/api/trades?range=all"]:
+                 f"/api/search?q=Elys", "/api/chart", "/api/trades?range=all", "/api/live"]:
         r = c.get(path, headers=h)
         assert r.status_code == 200, path
         urls += all_urls(r.text)

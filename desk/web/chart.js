@@ -26,10 +26,23 @@
     const pts = data.points || [];
     const run = (tSlide, fades) => {
       const { ctx, w, h } = setup(canvas);
-      const padT = 54, padB = 10;
       if (!pts.length) return;
       let t0 = pts[0][0], t1 = pts[pts.length - 1][0];
       if (t1 - t0 < 60) t0 = t1 - 60;
+      // lay the marks out first: a later mark moves up a row, and the chart makes room for every row
+      ctx.font = font(12, 600);
+      const Xm = t => ((t - t0) / (t1 - t0)) * (w - 8) + 4;
+      const rows = [], laid = [];
+      (data.marks || []).forEach(m => {
+        if (m.ts < t0) return;
+        const x = Xm(m.ts), tw = ctx.measureText(m.text).width + 14;
+        const left = Math.min(Math.max(4, x - tw / 2), w - tw - 4);
+        let row = 0;
+        while ((rows[row] || []).some(([a, b]) => left < b + 4 && left + tw > a - 4)) row++;
+        (rows[row] = rows[row] || []).push([left, left + tw]);
+        laid.push({ m, x, tw, left, row });
+      });
+      const padT = Math.max(54, 34 + rows.length * 24), padB = 10;
       let lo = Math.min(data.start, ...pts.map(p => p[1])), hi = Math.max(data.start, ...pts.map(p => p[1]));
       if (hi - lo < 1e-9) { hi += 1; lo -= 1; }
       const span = hi - lo; lo -= span * 0.12; hi += span * 0.12;
@@ -59,19 +72,11 @@
       ctx.strokeStyle = C.green; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
       const last = draw[draw.length - 1];
       ctx.fillStyle = C.green; ctx.beginPath(); ctx.arc(last[0], last[1], 3.5, 0, 7); ctx.fill();
-      // marks above the line, never overlapping: a later mark moves up a row
-      const rows = [];
+      // marks above the line (rows from the layout pass), each tied to its point by a dotted stem
       ctx.font = font(12, 600);
-      (data.marks || []).forEach(m => {
-        if (m.ts < t0) return;
-        const x = X(m.ts), tw = ctx.measureText(m.text).width + 14;
-        let left = Math.min(Math.max(4, x - tw / 2), w - tw - 4);
-        let row = 0;
-        while ((rows[row] || []).some(([a, b]) => left < b + 4 && left + tw > a - 4)) row++;
-        (rows[row] = rows[row] || []).push([left, left + tw]);
-        const vAt = interp(pts, m.ts);
-        const yLine = Y(vAt);
-        const yTop = Math.max(2, Math.min(yLine - 30, padT - 26) - row * 24);
+      laid.forEach(({ m, x, tw, left, row }) => {
+        const yLine = Y(interp(pts, m.ts));
+        const yTop = padT - 26 - row * 24;
         const alpha = fades[m.ts + m.text] != null ? fades[m.ts + m.text] : 1;
         const col = m.kind === 'buy' ? C.blue : m.kind === 'win' ? C.green : C.red;
         ctx.globalAlpha = alpha;
@@ -79,7 +84,7 @@
         ctx.beginPath(); ctx.moveTo(x, yTop + 20); ctx.lineTo(x, yLine); ctx.stroke(); ctx.setLineDash([]);
         roundRect(ctx, left, yTop, tw, 20, 10); ctx.fillStyle = col; ctx.fill();
         ctx.fillStyle = m.kind === 'win' ? '#000' : '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(m.text, left + 7, yTop + 10.5);
+        ctx.fillText(m.text, left + 7, yTop + 10.5); ctx.textBaseline = 'alphabetic';
         ctx.globalAlpha = 1;
       });
     };
