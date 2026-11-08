@@ -1,0 +1,51 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "context": {
+   "apiVersion": "4.4.0",
+   "slot": 466997526
+  },
+  "value": {
+   "data": {
+    "parsed": {
+     "info": {
+      "decimals": 6,
+      "extensions": [
+       {
+        "extension": "metadataPointer",
+        "state": {
+         "authority": null,
+         "metadataAddress": "AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump"
+        }
+       },
+       {
+        "extension": "tokenMetadata",
+        "state": {
+         "additionalMetadata": [],
+         "mint": "AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump",
+         "name": "Elysion",
+         "symbol": "ELYSION",
+         "updateAuthority": null,
+         "uri": "https://ipfs.io/ipfs/bafkreibz5cuobvzcski7jmp6kf4njdktvs6lvcdqltrptsjylv4unbsqwa"
+        }
+       }
+      ],
+      "freezeAuthority": null,
+      "isInitialized": true,
+      "mintAuthority": null,
+      "supply": "995834541715630"
+     },
+     "type": "mint"
+    },
+    "program": "spl-token-2022",
+    "space": 412
+   },
+   "executable": false,
+   "lamports": 2743200,
+   "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "rentEpoch": 18446744073709551615,
+   "space": 412
+  }
+ },
+ "id": 1
+}

@@ -1,0 +1,108 @@
+{
+ "jsonrpc": "2.0",
+ "count": 3069,
+ "result_first3": [
+  {
+   "pubkey": "14JkLY1MEgj5KyXsxZhpbXqBgtdUSd1kkAVtjLFbpoB",
+   "account": {
+    "lamports": 1513840,
+    "data": {
+     "program": "spl-token-2022",
+     "parsed": {
+      "info": {
+       "extensions": [
+        {
+         "extension": "immutableOwner"
+        }
+       ],
+       "isNative": false,
+       "mint": "AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump",
+       "owner": "3Ke6ZjqrVePZec2zJvwDbg19fjS5FUPbsArjQT5A8JH7",
+       "state": "initialized",
+       "tokenAmount": {
+        "amount": "60053920",
+        "decimals": 6,
+        "uiAmount": 60.05392,
+        "uiAmountString": "60.05392"
+       }
+      },
+      "type": "account"
+     },
+     "space": 170
+    },
+    "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "executable": false,
+    "rentEpoch": 18446744073709551615,
+    "space": 170
+   }
+  },
+  {
+   "pubkey": "1Y57T3LtcoVAPeynjmfNwAopaGAaZBgLi2b55i4NA3X",
+   "account": {
+    "lamports": 1513840,
+    "data": {
+     "program": "spl-token-2022",
+     "parsed": {
+      "info": {
+       "extensions": [
+        {
+         "extension": "immutableOwner"
+        }
+       ],
+       "isNative": false,
+       "mint": "AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump",
+       "owner": "8sWjbZnkhm83kkshPGTH5tPZ8MsonEZPw1LiF9DqSHhX",
+       "state": "initialized",
+       "tokenAmount": {
+        "amount": "69564997",
+        "decimals": 6,
+        "uiAmount": 69.564997,
+        "uiAmountString": "69.564997"
+       }
+      },
+      "type": "account"
+     },
+     "space": 170
+    },
+    "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "executable": false,
+    "rentEpoch": 18446744073709551615,
+    "space": 170
+   }
+  },
+  {
+   "pubkey": "1djYzwM8xeGhYxnfYrBYHSDKJiPNMz9DwjigkcxnmEo",
+   "account": {
+    "lamports": 1513840,
+    "data": {
+     "program": "spl-token-2022",
+     "parsed": {
+      "info": {
+       "extensions": [
+        {
+         "extension": "immutableOwner"
+        }
+       ],
+       "isNative": false,
+       "mint": "AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump",
+       "owner": "AwkxPu9fSETRm5sTmkYGcNRymUE3xzTBhLCRh656L6J7",
+       "state": "initialized",
+       "tokenAmount": {
+        "amount": "43513350",
+        "decimals": 6,
+        "uiAmount": 43.51335,
+        "uiAmountString": "43.51335"
+       }
+      },
+      "type": "account"
+     },
+     "space": 170
+    },
+    "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "executable": false,
+    "rentEpoch": 18446744073709551615,
+    "space": 170
+   }
+  }
+ ]
+}

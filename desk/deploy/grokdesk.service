@@ -1,0 +1,18 @@
+# systemd user unit:  cp deploy/grokdesk.service ~/.config/systemd/user/ && systemctl --user enable --now grokdesk
+# (run `loginctl enable-linger $USER` once so it keeps running after you log out)
+[Unit]
+Description=Grok Bot trading desk (5 agents + API + Telegram, one process)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/shorts-videos
+ExecStart=%h/shorts-videos/desk/.venv/bin/python -m desk.main
+Environment=DESK_HOME=%h/.grokdesk
+Environment=PORT=8787
+Environment=HOST=127.0.0.1
+# Environment=PUBLIC_URL=https://desk.example.com
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
