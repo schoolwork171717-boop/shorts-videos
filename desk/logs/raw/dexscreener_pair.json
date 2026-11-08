@@ -1,0 +1,78 @@
+[
+ {
+  "chainId": "solana",
+  "dexId": "pumpswap",
+  "url": "https://dexscreener.com/solana/hjxaedvdje644vhume3vpjptewlbmwgssgvyhf6lvw2l",
+  "pairAddress": "HjxaEDvdje644vhUmE3VpjpteWLBmWgSsgvYhf6LVw2L",
+  "baseToken": {
+   "address": "AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump",
+   "name": "Elysion",
+   "symbol": "ELYSION"
+  },
+  "quoteToken": {
+   "address": "So11111111111111111111111111111111111111112",
+   "name": "Wrapped SOL",
+   "symbol": "SOL"
+  },
+  "priceNative": "0.00006169",
+  "priceUsd": "0.005490",
+  "txns": {
+   "m5": {
+    "buys": 703,
+    "sells": 416
+   },
+   "h1": {
+    "buys": 8601,
+    "sells": 5392
+   },
+   "h6": {
+    "buys": 21213,
+    "sells": 12542
+   },
+   "h24": {
+    "buys": 21213,
+    "sells": 12542
+   }
+  },
+  "volume": {
+   "h24": 2035807.63,
+   "h6": 2035807.63,
+   "h1": 487158.92,
+   "m5": 40442.94
+  },
+  "priceChange": {
+   "m5": -1.5,
+   "h1": 160,
+   "h6": 10561,
+   "h24": 10561
+  },
+  "liquidity": {
+   "usd": 193259.08,
+   "base": 17765729,
+   "quote": 1075.6168
+  },
+  "fdv": 5467473,
+  "marketCap": 5467473,
+  "pairCreatedAt": 1794149899000,
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/El2OlMOnn4qfawG5?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/eRF7oL39eeEbPuh-?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/AWaBBNoVuwQ22B8Y5nEtLne2uEfk8UaYEFws7vT7pump?timestamp=1794158400000",
+   "websites": [
+    {
+     "url": "https://elysionpad.fun",
+     "label": "Website"
+    }
+   ],
+   "socials": [
+    {
+     "url": "https://x.com/ElysionPad",
+     "type": "twitter"
+    }
+   ]
+  },
+  "boosts": {
+   "active": 500
+  }
+ }
+]

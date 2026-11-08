@@ -1,0 +1,5 @@
+# The only 2 routines. Install with:  crontab deploy/crontab   (edit the paths first)
+# desk-health, hourly
+7 * * * *   cd $HOME/shorts-videos && DESK_HOME=$HOME/.grokdesk desk/.venv/bin/python -m desk.health
+# night-report: checks every 5 min, fires once a day at settings.report_time (default 08:00)
+*/5 * * * * cd $HOME/shorts-videos && DESK_HOME=$HOME/.grokdesk desk/.venv/bin/python -m desk.report --if-due

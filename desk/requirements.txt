@@ -1,0 +1,7 @@
+websockets
+httpx
+fastapi
+uvicorn
+pydantic
+pywebpush
+pytest
