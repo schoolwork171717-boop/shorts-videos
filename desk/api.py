@@ -96,7 +96,7 @@ def state():
             "startBalance": start, "todayPct": round(100 * (bal / start - 1), 2) if start else 0,
             "multiplier": round(bal / start, 2) if start else 1, "nightStart": n["started_at"], "serverTime": time.time(),
             "unread": db.q1("SELECT COUNT(*) c FROM pushes WHERE read=0")["c"], "agents": agent_cards(),
-            "appName": config.APP_NAME,
+            "appName": config.APP_NAME, "tonight": {k: v for k, v in trades(mode, "night")["summary"].items() if k != "curve"},
             "openPositions": [{"id": p["id"], "mint": p["mint"], "name": _name(p["mint"])} for p in db.open_positions()]}
 
 
@@ -209,6 +209,99 @@ def coin(mint):
 @app.get("/api/coin/{mint}", dependencies=A)
 def api_coin(mint: str):
     return coin(mint)
+
+
+# ------------------------------------------------------------------ trades & PnL
+# "profitable" before AUTO is even built: every line must be true on PAPER, all time
+AUTO_CRITERIA = {"nights": 3, "trades": 20, "profit_factor": 1.2, "max_dd_pct": 25.0}
+
+
+def trade_stats(closed, start_stack):
+    pnls = [p["pnl_usd"] or 0 for p in closed]
+    wins = [x for x in pnls if x > 0]
+    losses = [x for x in pnls if x <= 0]
+    realized = round(sum(pnls), 2)
+    eq, peak, dd, dd_pct, curve = start_stack, start_stack, 0.0, 0.0, []
+    for p in closed:
+        eq += p["pnl_usd"] or 0
+        peak = max(peak, eq)
+        if peak - eq > dd:
+            dd = peak - eq
+            dd_pct = 100 * dd / peak if peak else 0
+        curve.append([p["closed_at"], round(eq - start_stack, 2)])
+    holds = [(p["closed_at"] - p["opened_at"]) / 60 for p in closed]
+    return {"realized": realized, "pct": round(100 * realized / start_stack, 2) if start_stack else None,
+            "fees": round(sum(p["fees_usd"] or 0 for p in closed), 2), "trades": len(closed), "wins": len(wins),
+            "losses": len(losses), "winRate": round(100 * len(wins) / len(closed), 1) if closed else None,
+            "avgWin": round(sum(wins) / len(wins), 2) if wins else None,
+            "avgLoss": round(sum(losses) / len(losses), 2) if losses else None,
+            "profitFactor": round(sum(wins) / abs(sum(losses)), 2) if losses and sum(losses) < 0 else (None if not wins else "∞"),
+            "best": max(pnls) if pnls else None, "worst": min(pnls) if pnls else None,
+            "avgHoldMin": round(sum(holds) / len(holds), 1) if holds else None,
+            "maxDrawdown": round(dd, 2), "maxDrawdownPct": round(dd_pct, 2), "startStack": round(start_stack, 2),
+            "curve": curve}
+
+
+def _trade_row(p):
+    lp = db.last_price(p["mint"]) if not p["closed_at"] else None
+    c = db.coin(p["mint"]) or {}
+    row = {"id": p["id"], "mint": p["mint"], "name": c.get("name") or util.short(p["mint"]), "symbol": c.get("symbol"),
+           "openedAt": p["opened_at"], "closedAt": p["closed_at"], "entry": p["entry_price"], "size": p["size_usd"],
+           "stopPct": db.position_stop_pct(p), "mode": p["mode"], "link": links.coin_url(p["mint"], "solana")}
+    if p["closed_at"]:
+        row |= {"exit": p["exit_price"], "pnl": p["pnl_usd"], "pct": round(100 * (p["pnl_usd"] or 0) / p["size_usd"], 2),
+                "fees": p["fees_usd"], "reason": p["exit_reason"], "holdMin": round((p["closed_at"] - p["opened_at"]) / 60, 1)}
+    else:
+        price = lp["price"] if lp else None
+        unreal = round(p["size_usd"] * (price / p["entry_price"] - 1), 2) if price else None
+        row |= {"price": price, "unrealized": unreal, "pct": round(100 * unreal / p["size_usd"], 2) if unreal is not None else None,
+                "exitLine": risk_mod.exit_line(p), "exiting": bool(p["exiting_at"])}
+    return row
+
+
+def trades(mode=None, rng="night", before=None, limit=50):
+    mode = (mode or config.get("desk.mode")).upper()
+    since = db.night_start() if rng == "night" else (time.time() - 7 * 86400 if rng == "7d" else 0)
+    closed = db.q("SELECT * FROM positions WHERE mode=? AND closed_at IS NOT NULL AND opened_at>=? ORDER BY closed_at", (mode, since))
+    opn = db.q("SELECT * FROM positions WHERE mode=? AND closed_at IS NULL ORDER BY opened_at", (mode,))
+    start = db.current_stack(mode) - sum(p["pnl_usd"] or 0 for p in closed)
+    st = trade_stats(closed, start)
+    open_rows = [_trade_row(p) for p in opn]
+    st["unrealized"] = round(sum(r["unrealized"] or 0 for r in open_rows), 2)
+    by = {}
+    for p in closed:
+        b = by.setdefault(p["exit_reason"] or "?", {"reason": p["exit_reason"], "n": 0, "pnl": 0.0})
+        b["n"] += 1
+        b["pnl"] = round(b["pnl"] + (p["pnl_usd"] or 0), 2)
+    newest = list(reversed(closed))
+    if before:
+        newest = [p for p in newest if p["id"] < before]
+    page = newest[:limit]
+    # AUTO readiness: PAPER, all time
+    allp = db.q("SELECT * FROM positions WHERE mode='PAPER' AND closed_at IS NOT NULL ORDER BY closed_at")
+    a = trade_stats(allp, config.get("desk.paper_start_stack"))
+    nights = db.full_paper_nights(config.get("desk.min_paper_night_h"))
+    pf = a["profitFactor"]
+    pf_ok = pf == "∞" or (isinstance(pf, (int, float)) and pf >= AUTO_CRITERIA["profit_factor"])
+    ready = [
+        {"label": f"{AUTO_CRITERIA['nights']} full PAPER nights", "ok": nights >= AUTO_CRITERIA["nights"], "value": str(nights)},
+        {"label": f"{AUTO_CRITERIA['trades']}+ closed PAPER trades", "ok": a["trades"] >= AUTO_CRITERIA["trades"], "value": str(a["trades"])},
+        {"label": "Net PnL after fees > $0", "ok": a["realized"] > 0, "value": util.usd(a["realized"], True)},
+        {"label": f"Profit factor ≥ {AUTO_CRITERIA['profit_factor']}", "ok": pf_ok, "value": "n/a" if pf is None else str(pf)},
+        {"label": f"Max drawdown ≤ {AUTO_CRITERIA['max_dd_pct']:g}%", "ok": a["trades"] > 0 and a["maxDrawdownPct"] <= AUTO_CRITERIA["max_dd_pct"],
+         "value": f"{a['maxDrawdownPct']:g}%"},
+    ]
+    return {"mode": mode, "range": rng, "summary": st, "byReason": sorted(by.values(), key=lambda b: b["pnl"]),
+            "open": open_rows, "closed": [_trade_row(p) for p in page],
+            "next": page[-1]["id"] if len(newest) > limit else None,
+            "readiness": {"items": ready, "ready": all(i["ok"] for i in ready), "burnerUsd": 42}}
+
+
+@app.get("/api/trades", dependencies=A)
+def api_trades(mode: str | None = None, range: str = "night", before: int | None = None):  # noqa: A002
+    if range not in ("night", "7d", "all"):
+        raise HTTPException(400, "range is night, 7d or all")
+    return trades(mode, range, before)
 
 
 def audit_view(mint):

@@ -209,3 +209,13 @@ body.offline .balance-wrap,body.offline .coinhd,body.offline .largetitle,body.of
   *{transition:none!important;animation:none!important}
   .sk{opacity:.8}
 }
+
+/* trades & PnL */
+.seg2{display:flex;margin:0 var(--g) 10px;background:var(--card);border-radius:10px;padding:2px}
+.seg2 a{flex:1;min-height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:14px;font-weight:600;color:var(--sec)}
+.seg2 a.on{background:#636366;color:#fff}
+.filters{display:flex;justify-content:space-between;gap:8px;margin:0 var(--g)}
+.filters .seg button{min-width:56px}
+.pnlhead{padding:14px var(--g) 0}.pnlbig{font:700 48px/1.1 var(--display);letter-spacing:-1px;margin:2px 0}
+.pnlchart{width:100%;height:170px;display:block;margin-top:8px}
+.pnlrow{display:block;margin-top:18px}

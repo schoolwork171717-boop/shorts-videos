@@ -197,5 +197,27 @@
     ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * (r - 7), cy + Math.sin(a) * (r - 7)); ctx.lineTo(cx + Math.cos(a) * (r + 7), cy + Math.sin(a) * (r + 7)); ctx.stroke();
   }
 
-  window.Charts = { lineChart, candleChart, scoreRing, fmtP, C, reduced };
+  /* ---------------- cumulative PnL (step line around a dashed $0 line) ---------------- */
+  function pnlCurve(canvas, curve, t0) {
+    const { ctx, w, h } = setup(canvas);
+    const pts = [[t0, 0]].concat(curve || []);
+    const pad = 14;
+    if (pts.length < 2) {
+      ctx.setLineDash([4, 5]); ctx.strokeStyle = C.ter; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = C.sec; ctx.font = font(14); ctx.textAlign = 'center'; ctx.fillText('No closed trades yet', w / 2, h / 2 - 12); return;
+    }
+    const a = pts[0][0], b = Math.max(pts[pts.length - 1][0], a + 60);
+    let lo = Math.min(0, ...pts.map(p => p[1])), hi = Math.max(0, ...pts.map(p => p[1]));
+    if (hi - lo < 1) { hi += 0.5; lo -= 0.5; }
+    const X = t => 4 + (t - a) / (b - a) * (w - 8), Y = v => pad + (1 - (v - lo) / (hi - lo)) * (h - 2 * pad);
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = C.ter; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(w, Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    const col = pts[pts.length - 1][1] >= 0 ? C.green : C.red;
+    ctx.beginPath(); ctx.moveTo(X(pts[0][0]), Y(0));
+    for (let i = 1; i < pts.length; i++) { ctx.lineTo(X(pts[i][0]), Y(pts[i - 1][1])); ctx.lineTo(X(pts[i][0]), Y(pts[i][1])); }
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    pts.slice(1).forEach(p => { ctx.fillStyle = p[1] >= 0 ? C.green : C.red; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 3, 0, 7); ctx.fill(); });
+  }
+
+  window.Charts = { lineChart, candleChart, scoreRing, pnlCurve, fmtP, C, reduced };
 })();

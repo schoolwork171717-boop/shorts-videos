@@ -132,6 +132,7 @@
       <div class="ranges" id="ranges">${['LIVE', '1H', '4H', '1D', '1W', 'ALL'].map(r => `<button data-r="${r}" class="${r === S.range ? 'on' : ''}">${r}</button>`).join('')}</div>
       <div class="section"><h3 id="agents-h">Agents</h3></div>
       <div class="carousel" id="cards">${Object.keys(AG).map(a => `<div class="acard" id="card-${a}"></div>`).join('')}</div>
+      <a class="list pnlrow" href="#/trades" id="pnlrow"></a>
       <div class="section"><h3>Activity</h3><a href="#/activity">See all</a></div>
       <div class="list" id="act5"></div></div>`;
     wireNav();
@@ -155,6 +156,9 @@
     $('#mult').textContent = st.multiplier.toFixed(2) + '×';
     const dot = $('#btn-bell .dot'); if (!!st.unread !== !!dot) $('#btn-bell').innerHTML = $('#btn-bell').innerHTML.replace(/<i class="dot"><\/i>/, '') + (st.unread ? '<i class="dot"></i>' : '');
     window.Charts.lineChart($('#chart'), ch, S.chart); S.chart = ch;
+    const tn = st.tonight || {};
+    $('#pnlrow').innerHTML = `<div class="row"><div class="tx"><div class="t1">Trades & PnL tonight</div><div class="t2">${tn.trades || 0} closed${tn.winRate != null ? ' · ' + tn.winRate + '% won' : ''} · fees ${usd(tn.fees || 0)}</div></div>
+      <div class="val ${(tn.realized || 0) >= 0 ? 'up' : 'down'}">${usd(tn.realized || 0, true)}<small>›</small></div></div>`;
     const running = st.agents.filter(a => !a.paused).length;
     $('#agents-h').textContent = `Agents · ${running} running`;
     st.agents.forEach(a => paintCard(a));
@@ -239,7 +243,7 @@
 
   /* ================= ACTIVITY ================= */
   async function viewActivity() {
-    if (!$('#acts')) view.innerHTML = `<div class="largetitle">Activity</div><div class="list" id="acts">${'<div class="row"><div class="sk" style="height:40px;flex:1"></div></div>'.repeat(5)}</div>`;
+    if (!$('#acts')) view.innerHTML = `<div class="largetitle">Activity</div>${tabSeg()}<div class="list" id="acts">${'<div class="row"><div class="sk" style="height:40px;flex:1"></div></div>'.repeat(5)}</div>`;
     const d = await api('/api/activity');
     if (S.route !== 'activity') return;
     S.actNext = d.next;
@@ -253,6 +257,69 @@
         if (!n.next) $('#more').remove();
       };
     }
+  }
+
+  function tabSeg() {
+    return `<div class="seg2"><a href="#/activity" class="${S.route === 'activity' ? 'on' : ''}">Activity</a><a href="#/trades" class="${S.route === 'trades' ? 'on' : ''}">Trades & PnL</a></div>`;
+  }
+
+  /* ================= TRADES & PnL ================= */
+  const REASON = { trail: 'Trailing stop', stop: 'Stop', timeout: 'Timeout', pulled: 'Liquidity pulled', manual: 'Sold by hand' };
+  const hold = m => m == null ? 'n/a' : m < 60 ? Math.round(m) + 'm' : Math.floor(m / 60) + 'h ' + Math.round(m % 60) + 'm';
+  const cls = v => v == null ? '' : v >= 0 ? 'up' : 'down';
+  function tradeRow(t) {
+    const open = !t.closedAt;
+    const v = open ? t.unrealized : t.pnl;
+    const sub = open ? `${usd(t.size)} in · ${price(t.entry)} → ${price(t.price)} · stop -${gnum(t.stopPct)}%${t.exiting ? ' · exiting' : ''}`
+      : `${tm(t.openedAt)} · ${hold(t.holdMin)} · ${esc(REASON[t.reason] || t.reason)} · fees ${usd(t.fees)}`;
+    return `<a class="row" href="#/coin/${esc(t.mint)}"><div class="ic ${open ? 'bought' : (t.pnl >= 0 ? 'sold' : 'stopped')}">${open ? '•' : (t.pnl >= 0 ? '+' : '−')}</div>
+      <div class="tx"><div class="t1">${esc(t.name)}</div><div class="t2">${sub}</div></div>
+      <div class="val ${cls(v)}">${v == null ? 'n/a' : usd(v, true)}<small>${t.pct == null ? '' : pct(t.pct)}${open ? ' open' : ''}</small></div></a>`;
+  }
+  async function viewTrades(more) {
+    S.tr = S.tr || { mode: null, range: 'night' };
+    if (!$('#trades')) view.innerHTML = `<div class="largetitle">Activity</div>${tabSeg()}<div id="trades"><div class="sk" style="height:120px;margin:12px var(--g)"></div><div class="sk" style="height:180px;margin:12px var(--g)"></div></div>`;
+    const q = `/api/trades?range=${S.tr.range}` + (S.tr.mode ? `&mode=${S.tr.mode}` : '');
+    const d = await api(more ? q + '&before=' + S.tr.next : q);
+    if (S.route !== 'trades') return;
+    if (more) { S.tr.closed = S.tr.closed.concat(d.closed); } else { S.tr.closed = d.closed; }
+    S.tr.next = d.next; S.tr.mode = d.mode; S.tr.data = d;
+    const s = d.summary;
+    const stat = (k, v, c) => `<div><span>${k}</span><b class="${c || ''}">${v}</b></div>`;
+    $('#trades').innerHTML = `
+      <div class="filters"><div class="seg" id="tr-mode">${['PAPER', 'LIVE'].map(m => `<button data-v="${m}" class="${m === d.mode ? 'on' : ''}">${m}</button>`).join('')}</div>
+        <div class="seg" id="tr-range">${[['night', 'Tonight'], ['7d', '7D'], ['all', 'All']].map(([k, l]) => `<button data-v="${k}" class="${k === d.range ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <div class="pnlhead"><div class="muted">Net PnL after fees${d.mode === 'PAPER' ? ' · PAPER' : ''}</div>
+        <div class="pnlbig ${cls(s.realized)}">${usd(s.realized, true)}</div>
+        <div class="muted">${s.pct == null ? '' : pct(s.pct) + ' of ' + usd(s.startStack) + ' · '}open ${usd(s.unrealized, true)} before exit fees</div></div>
+      <canvas class="pnlchart" id="pnlc"></canvas>
+      <div class="stats">${stat('Win rate', s.winRate == null ? 'n/a' : s.winRate + '%')}${stat('Trades', `${s.trades} · ${s.wins}W ${s.losses}L`)}
+        ${stat('Profit factor', s.profitFactor == null ? 'n/a' : s.profitFactor)}${stat('Max drawdown', usd(-s.maxDrawdown) + ' · ' + s.maxDrawdownPct + '%', s.maxDrawdown ? 'down' : '')}
+        ${stat('Avg win', s.avgWin == null ? 'n/a' : usd(s.avgWin, true), 'up')}${stat('Avg loss', s.avgLoss == null ? 'n/a' : usd(s.avgLoss, true), 'down')}
+        ${stat('Best', s.best == null ? 'n/a' : usd(s.best, true), cls(s.best))}${stat('Worst', s.worst == null ? 'n/a' : usd(s.worst, true), cls(s.worst))}
+        ${stat('Fees paid', usd(s.fees))}${stat('Avg hold', hold(s.avgHoldMin))}</div>
+      <div class="group-t">PnL by exit</div><div class="list">${d.byReason.length ? d.byReason.map(b => `<div class="vrow"><span class="k">${esc(REASON[b.reason] || b.reason)} · ${b.n}</span><span class="val ${cls(b.pnl)}">${usd(b.pnl, true)}</span></div>`).join('') : '<div class="empty">No exits yet</div>'}</div>
+      <div class="group-t">AUTO readiness · burner wallet $${d.readiness.burnerUsd}</div><div class="list">
+        ${d.readiness.items.map(i => `<div class="vrow"><span class="k">${i.ok ? '<span class="up">✓</span>' : '<span class="down">✕</span>'} ${esc(i.label)}</span><span class="val">${esc(i.value)}</span></div>`).join('')}
+        <div class="vrow"><span class="muted" style="font-size:13px">${d.readiness.ready ? 'Every line is green on PAPER. AUTO is still off until you say go.' : 'AUTO is not built. It is considered only when every line is green on PAPER.'}</span></div></div>
+      <div class="group-t">Open · ${d.open.length}</div><div class="list">${d.open.length ? d.open.map(tradeRow).join('') : '<div class="empty">No open positions</div>'}</div>
+      <div class="group-t">Closed · ${s.trades}</div><div class="list" id="tr-closed">${S.tr.closed.length ? S.tr.closed.map(tradeRow).join('') : '<div class="empty">No closed trades yet</div>'}</div>
+      ${d.next ? '<button class="more" id="tr-more">Load more</button>' : ''}
+      ${S.tr.closed.length ? '<button class="more" id="tr-csv">Export CSV</button>' : ''}`;
+    requestAnimationFrame(() => window.Charts.pnlCurve($('#pnlc'), s.curve, s.curve.length ? Math.min(s.curve[0][0], ...S.tr.closed.map(t => t.openedAt)) : 0));
+    $$('#tr-mode button').forEach(b => b.onclick = () => { S.tr.mode = b.dataset.v; viewTrades(); });
+    $$('#tr-range button').forEach(b => b.onclick = () => { S.tr.range = b.dataset.v; viewTrades(); });
+    const m = $('#tr-more'); if (m) m.onclick = () => viewTrades(true);
+    const c = $('#tr-csv'); if (c) c.onclick = exportCsv;
+  }
+  async function exportCsv() {
+    const rows = [['opened', 'closed', 'coin', 'mint', 'mode', 'size_usd', 'entry', 'exit', 'reason', 'pnl_usd', 'pct', 'fees_usd', 'fomo_link']];
+    S.tr.closed.forEach(t => rows.push([new Date(t.openedAt * 1000).toISOString(), new Date(t.closedAt * 1000).toISOString(), t.name, t.mint, t.mode,
+      t.size, t.entry, t.exit, t.reason, t.pnl, t.pct, t.fees, t.link]));
+    const csv = rows.map(r => r.map(x => `"${String(x == null ? '' : x).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const file = new File([csv], `trades-${S.tr.mode}-${S.tr.range}.csv`, { type: 'text/csv' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (_) { return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
   }
 
   /* ================= AGENTS ================= */
@@ -551,12 +618,13 @@
     const prev = S.route;
     S.route = name + (arg ? '/' + arg : '');
     if (prev !== S.route) { S.audit = null; if (name !== 'home') S.chart = null; window.scrollTo(0, 0); }
-    $$('#tabbar a').forEach(a => a.classList.toggle('on', a.dataset.tab === name));
+    $$('#tabbar a').forEach(a => a.classList.toggle('on', a.dataset.tab === (name === 'trades' ? 'activity' : name)));
     if (prev && prev.split('/')[0] !== name) view.innerHTML = '';
     try {
       if (name === 'home') await viewHome();
       else if (name === 'agents') await viewAgents();
       else if (name === 'activity') await viewActivity();
+      else if (name === 'trades') await viewTrades();
       else if (name === 'account') await viewAccount(arg);
       else if (name === 'coin') await viewCoin(decodeURIComponent(arg));
       else if (name === 'audit') await viewAudit(arg ? decodeURIComponent(arg) : null);
@@ -582,6 +650,7 @@
         else if (r === 'agents') await viewAgents();
         else if (r.startsWith('coin/')) await viewCoin(decodeURIComponent(r.slice(5)));
         else if (r === 'activity' && window.scrollY < 50) await viewActivity();
+        else if (r === 'trades' && window.scrollY < 50 && !(S.tr && S.tr.closed && S.tr.closed.length > 50)) await viewTrades();
         else await api('/api/state').then(st => S.state = st);
       } catch (e) {
         if (e instanceof Locked) { lockedScreen(); continue; }
