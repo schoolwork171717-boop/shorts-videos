@@ -49,6 +49,10 @@ MAP = {
         "market_type": ["marketType"],                # "pump_fun_amm" for PumpSwap
         "market_lp_locked_pct": ["lp", "lpLockedPct"],  # LP burned or locked, percent
         "market_lp_burned": ["lp", "lpBurned"],       # present, null in the sample
+        "market_mint_a": ["mintA"],
+        "market_mint_b": ["mintB"],
+        "market_vault_a": ["liquidityA"],             # token account holding mintA (owner = the pool)
+        "market_vault_b": ["liquidityB"],             # token account holding mintB (WSOL for PumpSwap)
         "market_quote_usd": ["lp", "quoteUSD"],
         "market_base_usd": ["lp", "baseUSD"],
         "top_holders": ["topHolders"],
@@ -77,6 +81,10 @@ MAP = {
         "amount_raw": ["account", "data", "parsed", "info", "tokenAmount", "amount"],
         "delegate": ["account", "data", "parsed", "info", "delegate"],
         "delegated_amount_raw": ["account", "data", "parsed", "info", "delegatedAmount", "amount"],
+    },
+    "rpc_vault": {  # getMultipleAccounts jsonParsed value[] item (a pool vault token account)
+        "mint": ["data", "parsed", "info", "mint"],
+        "ui_amount": ["data", "parsed", "info", "tokenAmount", "uiAmount"],
     },
     # getTokenLargestAccounts: not mapped. The public RPC returned 429 on every call (logs/raw/rpc_getTokenLargestAccounts.json
     # is that error), so there is no raw sample. Top 10 is read from getProgramAccounts (rpc_token_account) instead.

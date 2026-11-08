@@ -84,6 +84,8 @@ async def amain(port=None, with_api=True):
     db.current_night()
     for name in desk.agents:
         desk.start(name)
+    from . import learner
+    asyncio.get_running_loop().create_task(learner.run())
     jobs = [heartbeat(), balance_writer(), night_check(), api.price_writer(), telegram.run()]
     if with_api:
         port = int(port or os.environ.get("PORT", 8787))

@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS nights (id INTEGER PRIMARY KEY, started_at REAL, ende
 CREATE TABLE IF NOT EXISTS pushes (id INTEGER PRIMARY KEY, ts REAL, text TEXT, url TEXT, mint TEXT, read INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS reconnects (ts REAL, agent TEXT, reason TEXT);
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS lessons (id INTEGER PRIMARY KEY, ts REAL, kind TEXT, key TEXT, old TEXT, new TEXT, text TEXT,
+  evidence TEXT, status TEXT, undone_at REAL);
+CREATE TABLE IF NOT EXISTS postmortems (position_id INTEGER PRIMARY KEY, ts REAL, mint TEXT, pnl REAL, pct REAL, reason TEXT,
+  tags TEXT, features TEXT);
 CREATE INDEX IF NOT EXISTS activity_ts ON activity (ts);
 CREATE INDEX IF NOT EXISTS scans_mint ON scans (mint);
 CREATE INDEX IF NOT EXISTS audits_mint ON audits (mint);
@@ -62,6 +66,12 @@ def connect(p=None):
         _conn.execute("PRAGMA journal_mode=WAL")
         _conn.execute("PRAGMA synchronous=NORMAL")
         _conn.executescript(SCHEMA)
+        for table, col in (("signals", "features TEXT"), ("signals", "native REAL"), ("positions", "entry_native REAL"),
+                           ("coins", "vault_base TEXT"), ("coins", "vault_quote TEXT")):
+            try:
+                _conn.execute(f"ALTER TABLE {table} ADD COLUMN {col}")
+            except sqlite3.OperationalError:
+                pass  # already there
     config.load()
     current_night()          # the night is open from the moment the desk has a db
     return _conn

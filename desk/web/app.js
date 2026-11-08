@@ -280,7 +280,8 @@
     S.tr = S.tr || { mode: null, range: 'night' };
     if (!$('#trades')) view.innerHTML = `<div class="largetitle">Activity</div>${tabSeg()}<div id="trades"><div class="sk" style="height:120px;margin:12px var(--g)"></div><div class="sk" style="height:180px;margin:12px var(--g)"></div></div>`;
     const q = `/api/trades?range=${S.tr.range}` + (S.tr.mode ? `&mode=${S.tr.mode}` : '');
-    const d = await api(more ? q + '&before=' + S.tr.next : q);
+    const [d, lz] = await Promise.all([api(more ? q + '&before=' + S.tr.next : q), api('/api/lessons')]);
+    S.tr.lz = lz;
     if (S.route !== 'trades') return;
     if (more) { S.tr.closed = S.tr.closed.concat(d.closed); } else { S.tr.closed = d.closed; }
     S.tr.next = d.next; S.tr.mode = d.mode; S.tr.data = d;
@@ -302,6 +303,7 @@
       <div class="group-t">AUTO readiness · burner wallet $${d.readiness.burnerUsd}</div><div class="list">
         ${d.readiness.items.map(i => `<div class="vrow"><span class="k">${i.ok ? '<span class="up">✓</span>' : '<span class="down">✕</span>'} ${esc(i.label)}</span><span class="val">${esc(i.value)}</span></div>`).join('')}
         <div class="vrow"><span class="muted" style="font-size:13px">${d.readiness.ready ? 'Every line is green on PAPER. AUTO is still off until you say go.' : 'AUTO is not built. It is considered only when every line is green on PAPER.'}</span></div></div>
+      <div class="group-t">Lessons learned · learner ${esc(S.tr.lz ? S.tr.lz.mode : '')}</div><div class="list" id="tr-lessons">${lessonRows()}</div>
       <div class="group-t">Open · ${d.open.length}</div><div class="list">${d.open.length ? d.open.map(tradeRow).join('') : '<div class="empty">No open positions</div>'}</div>
       <div class="group-t">Closed · ${s.trades}</div><div class="list" id="tr-closed">${S.tr.closed.length ? S.tr.closed.map(tradeRow).join('') : '<div class="empty">No closed trades yet</div>'}</div>
       ${d.next ? '<button class="more" id="tr-more">Load more</button>' : ''}
@@ -311,6 +313,18 @@
     $$('#tr-range button').forEach(b => b.onclick = () => { S.tr.range = b.dataset.v; viewTrades(); });
     const m = $('#tr-more'); if (m) m.onclick = () => viewTrades(true);
     const c = $('#tr-csv'); if (c) c.onclick = exportCsv;
+    $$('#tr-lessons [data-l]').forEach(b => b.onclick = async ev => {
+      ev.preventDefault();
+      const [id, act] = b.dataset.l.split(':');
+      if (act === 'undo' && !confirm('Undo this lesson? The setting goes back to its old value.')) return;
+      toast((await api(`/api/lessons/${id}/${act}`, { method: 'POST' })).result); viewTrades();
+    });
+  }
+  function lessonRows() {
+    const L = (S.tr.lz && S.tr.lz.lessons) || [];
+    if (!L.length) return `<div class="empty">No lessons yet. Every closed trade gets a post-mortem; the desk tightens only when losses show a pattern.</div>`;
+    return L.map(l => `<div class="vrow" style="align-items:flex-start"><span class="k" style="flex:1"><b style="color:#fff">#${l.id} ${esc(l.key.split('.').pop().replace(/_/g, ' '))} ${esc(gnum(l.old))} → ${esc(gnum(l.new))}</b><br>${esc(l.text)}</span>
+      ${l.status === 'applied' ? `<button class="link" style="color:#ff453a" data-l="${l.id}:undo">Undo</button>` : l.status === 'suggested' ? `<button class="link" data-l="${l.id}:apply">Apply</button>` : `<span class="muted">${esc(l.status)}</span>`}</div>`).join('');
   }
   async function exportCsv() {
     const rows = [['opened', 'closed', 'coin', 'mint', 'mode', 'size_usd', 'entry', 'exit', 'reason', 'pnl_usd', 'pct', 'fees_usd', 'fomo_link']];

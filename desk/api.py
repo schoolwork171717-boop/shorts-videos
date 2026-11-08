@@ -350,7 +350,10 @@ def live():
               "exited": c("SELECT COUNT(*) c FROM positions WHERE opened_at>=? AND closed_at IS NOT NULL")}
     events = [e for e in _history() if e["ts"] < STARTED] + [e for e in bus.recent if e["kind"] not in ("balance", "price")]
     events.sort(key=lambda e: e["ts"], reverse=True)
+    from . import learner
+    lz = learner.lessons_view(8)
     return {"state": st, "trades": tr, "funnel": funnel, "events": events[:250], "serverTime": time.time(),
+            "lessons": lz["lessons"], "learner": lz["mode"],
             "risk": {"stopPct": config.get("risk.stop_pct"), "trailPct": config.get("risk.trail_pct"),
                      "timeoutH": config.get("risk.timeout_h")}}
 
@@ -358,6 +361,20 @@ def live():
 @app.get("/api/live", dependencies=A)
 def api_live():
     return live()
+
+
+@app.get("/api/lessons", dependencies=A)
+def api_lessons():
+    from . import learner
+    return learner.lessons_view()
+
+
+@app.post("/api/lessons/{lid}/{action}", dependencies=A)
+def api_lesson_action(lid: int, action: str):
+    from . import learner
+    if action not in ("undo", "apply"):
+        raise HTTPException(404)
+    return {"result": (learner.undo if action == "undo" else learner.apply)(lid)}
 
 
 @app.get("/api/trades", dependencies=A)

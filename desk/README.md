@@ -56,6 +56,26 @@ The process serves `web/` and `/api` itself. Put it behind HTTPS on any always-o
 `deploy/grokdesk.service` (systemd), `deploy/Caddyfile` (HTTPS reverse proxy, SSE-friendly),
 `deploy/crontab` (the 2 routines). Set `PUBLIC_URL` so the morning Page link is right.
 
+## Learning from mistakes (`learner.py`)
+
+After every closed trade the desk writes a post-mortem (tags: `rug` = lost over half the ticket, `gap` = stop filled
+more than 2 points past the line, `fast` = lost inside 2 minutes, `fee-heavy` = fees over a quarter of the loss),
+then looks for lessons:
+
+- **Rug** (one is enough): tickets are capped at 10% of the stack (`executor.max_ticket_pct`). No stop survives a rug;
+  only size limits the damage. FOMO charges 2% below $47.50 *and* at $47.50, so bumping a small ticket buys no
+  fee saving, only more risk.
+- **Gap** (one is enough): Risk polls every 5 s (`risk.poll_s`). Risk reads the price from the pool's own two vaults
+  on-chain (DexScreener caches about 30 s), as a ratio to the on-chain reading at entry so stops never mix sources.
+- **Patterns**: an entry gate (min liquidity, min score, max chase, max top 10, max 1h change, max 5-minute drop) is
+  tightened when at least 2 losing trades share a value that no winning trade had and they explain at least half the
+  $ lost. Guards against overfitting: the threshold must sit inside the setting's range (never at its edge) and one
+  lesson tightens a gate by at most 3x.
+
+It never loosens anything. `desk.learner`: `auto` (default: apply, push "Learned #N…"), `suggest` (push, apply with
+`apply lesson N`), `off`. Every lesson is in the change log as `learner`, on the Trades screen, the live app and the
+morning Page; `undo lesson N` restores the old value, and an undone lesson only returns with 2 new losses.
+
 ## Tests (STEP 13)
 
 ```bash

@@ -46,6 +46,8 @@ class Risk(Agent):
         super().__init__()
         self.no_price: dict[int, int] = {}
         self.missed_polls = 0
+        self.dex: dict = {}          # mint -> (price, liquidity, v5) from the last DexScreener read
+        self.last_dex = 0.0
 
     def can_pause(self):
         return not db.open_positions()
@@ -78,11 +80,7 @@ class Risk(Agent):
         if not live:
             return
         if prices is None:
-            pairs = await sources.dex_tokens([p["mint"] for p in live])
-            prices = {}
-            for m, pr in pairs.items():
-                v = sources.pair_view(pr)
-                prices[m] = (v["price"], v["liquidity"], v["v5"])
+            prices = await self._prices(live)
         for p in live:
             price, liq, v5 = prices.get(p["mint"], (None, None, None))
             name = (db.coin(p["mint"]) or {}).get("name") or util.short(p["mint"])
@@ -111,6 +109,37 @@ class Risk(Agent):
                           reason or "hold")
             if reason:
                 await self.exit(p, reason, price, name, now)
+
+    async def _prices(self, live):
+        """Price from the pool's own vaults every poll (DexScreener caches ~30s: both early losses gapped inside that window),
+        as a ratio to the on-chain reading at entry, so the stop math never mixes two sources.
+        DexScreener stays the source for liquidity and for positions without vaults, read at most every 30s."""
+        now = time.time()
+        need_dex = now - self.last_dex >= max(30, config.get("risk.poll_s")) or any(not p.get("entry_native") for p in live)
+        if need_dex:
+            pairs = await sources.dex_tokens([p["mint"] for p in live])
+            for m, pr in pairs.items():
+                v = sources.pair_view(pr)
+                self.dex[m] = (v["price"], v["liquidity"], v["v5"])
+            self.last_dex = now
+        out = {m: self.dex[m] for m in (p["mint"] for p in live) if m in self.dex}
+        vaults = {}
+        for p in live:
+            c = db.coin(p["mint"]) or {}
+            if p.get("entry_native") and c.get("vault_base") and c.get("vault_quote"):
+                vaults[p["id"]] = (c["vault_base"], c["vault_quote"])
+        if vaults:
+            try:
+                nat = await sources.pool_natives(list(set(vaults.values())))
+            except Exception as e:  # noqa: BLE001
+                self.log.info("on-chain read failed (%s), DexScreener price used", e)
+                nat = {}
+            for p in live:
+                n = nat.get(vaults.get(p["id"]))
+                if n:
+                    liq, v5 = (out.get(p["mint"]) or (None, None, None))[1:]
+                    out[p["mint"]] = (p["entry_price"] * n / p["entry_native"], liq, v5)
+        return out
 
     async def exit(self, p, reason, exit_price, name, now=None):
         now = now or time.time()
@@ -145,6 +174,9 @@ class Risk(Agent):
         bus.emit("exit", out)
         self.log.info("EXIT %s", out)
         await notifier.notify(text, buttons, mint=p["mint"], kind="exit")
+        if mode == "PAPER":
+            from .. import learner
+            asyncio.create_task(learner.run())
         return out
 
     def _activity(self, p, reason, net, pc, stop_pct, name):
@@ -186,4 +218,9 @@ class Risk(Agent):
         self._activity(p, p["exit_reason"] if p["exit_reason"] in ACT_SUB or p["exit_reason"] == "stop" else "trail",
                        p["pnl_usd"], round(100 * p["pnl_usd"] / p["size_usd"], 2), db.position_stop_pct(p), name)
         bus.emit("exit", {"mint": p["mint"], "status": "closed", "positionId": pid})
+        from .. import learner
+        try:
+            asyncio.get_running_loop().create_task(learner.run())
+        except RuntimeError:
+            pass
         return "closed"

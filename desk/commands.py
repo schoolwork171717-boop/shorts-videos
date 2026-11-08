@@ -9,7 +9,7 @@ AGENTS = ["scanner", "auditor", "analyst", "executor", "risk"]
 HELP = ("Commands:\n"
         "buy X · sell X · why X · pause Scanner · resume Scanner\n"
         "set stop to -8% · stack 1240 · status · paper · live\n"
-        "invite · report\n"
+        "invite · report · lessons · undo lesson N\n"
         "X = name, symbol or mint")
 
 desk = None  # set by main: object with .agents dict
@@ -68,6 +68,17 @@ async def handle(text: str, who="telegram"):
         return [_set("desk.mode", "LIVE", who, label="mode")]
     if low == "live":
         return [("Type LIVE (capitals) to switch to LIVE. Money only moves when you tap Buy on FOMO and buy inside FOMO.", [])]
+    m = re.match(r"^(undo|apply) lesson #?(\d+)$", low)
+    if m:
+        from . import learner
+        return [((learner.undo if m.group(1) == "undo" else learner.apply)(int(m.group(2))), [])]
+    if low in ("lessons", "what did you learn", "learned"):
+        from . import learner
+        v = learner.lessons_view(10)
+        if not v["lessons"]:
+            return [(f"No lessons yet (learner: {v['mode']}). Post-mortems so far: {len(v['postmortems'])}.", [])]
+        return [("\n".join(f"#{l['id']} {l['status']}: {l['text']} ({l['key'].split('.')[-1]} {util.gnum(l['old'])} -> {util.gnum(l['new'])})"
+                           for l in v["lessons"]), [])]
     if low == "invite":
         return [(f"New to FOMO? {links.SIGNUP_URL}", [{"label": "Join FOMO", "url": links.SIGNUP_URL}])]
     if low == "report":

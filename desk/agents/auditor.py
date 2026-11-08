@@ -163,6 +163,10 @@ class Auditor(Agent):
                         break
                 if mk is None or not fields.has("rugcheck_report", "market_lp_locked_pct", mk):
                     return False, "no data: liquidity", "rugcheck"
+                va, vb = fields.get("rugcheck_report", "market_vault_a", mk), fields.get("rugcheck_report", "market_vault_b", mk)
+                if va and vb:
+                    base_is_a = fields.get("rugcheck_report", "market_mint_a", mk) == mint
+                    db.upsert_coin(dict(mint=mint, vault_base=va if base_is_a else vb, vault_quote=vb if base_is_a else va))
                 locked = fields.get("rugcheck_report", "market_lp_locked_pct", mk) or 0
                 ctx["lp"] = f"{locked:g}% locked"
                 if locked < config.get("auditor.min_lp_locked_pct"):

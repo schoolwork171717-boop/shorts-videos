@@ -88,6 +88,11 @@ def build(night) -> str:
     vs = db.q("SELECT * FROM verdicts WHERE ts>=? AND ts<? AND pass=0 ORDER BY ts", (s, e))
     out += [f"<div class=row><span>{a(v['mint'], nm(v['mint']))}<br><span class=sub>{E(v['reason'] or '')} · score {v['score']}"
             f"{' · rules' if v['model'] == 'rules' else ''}</span></span><span class=sub>{util.hhmm(v['ts'])}</span></div>" for v in vs] or ["<div class=row>None</div>"]
+    lz = db.q("SELECT * FROM lessons WHERE ts>=? AND ts<? ORDER BY id", (s, e))
+    out.append("<h2>Lessons learned</h2><div class=card>")
+    out += [f"<div class=row><span>#{l['id']} {E(l['text'])}<br><span class=sub>{E(l['key'])}: {E(l['old'])} → {E(l['new'])} · {E(l['status'])}"
+            f"</span></span></div>" for l in lz] or ["<div class=row>None tonight</div>"]
+    out.append("</div>")
     tok = db.q1("SELECT COALESCE(SUM(input_tokens),0) t, COUNT(*) n FROM verdicts WHERE ts>=? AND ts<? AND model!='rules'", (s, e))
     out.append(f"</div><h2>Jev</h2><div class=card><div class=row><span>Calls · input tokens</span><span>{tok['n']} · {tok['t']:,}</span></div>"
                f"<div class=row><span>Cost</span><span>{'$0 (rules mode)' if config.get('analyst.mode') == 'rules' else 'n/a: no Jev price list known to the desk'}</span></div></div>")

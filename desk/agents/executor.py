@@ -1,5 +1,6 @@
 """AGENT 4 · EXECUTOR. Never picks a coin, never places an order. Arithmetic + 1 button."""
 import asyncio
+import json
 import time
 
 from .. import bus, config, db, links, notifier, sources, util
@@ -20,6 +21,11 @@ def size_ticket(stack, free, liquidity):
         if free < mt:
             return None, "no free stack", cap, raw
         size, cap = mt, "bump"
+    max_t = stack * config.get("executor.max_ticket_pct") / 100      # the learner's rug lesson: size is the only rug defense
+    if size > max_t:
+        size, cap = max_t, "max_ticket_pct"
+    if size < 5:                                                       # FOMO's smallest ticket in its fee table
+        return None, "under $5", cap, raw
     if size > free:
         return None, "no free stack", cap, raw
     return round(size, 2), None, cap, raw
@@ -70,6 +76,19 @@ class Executor(Agent):
         p_an = item.get("price")
         if p_an and price > p_an * (1 + config.get("executor.recheck_price_up_pct") / 100):
             return self._skip(mint, name, stack, raw, cap, "ran before the push", mode, link)
+        drop = -(v.get("p5") or 0)
+        if config.get("executor.max_drop_m5_pct") < 100 and drop > config.get("executor.max_drop_m5_pct"):
+            return self._skip(mint, name, stack, raw, cap, f"falling knife -{drop:.0f}% in 5m", mode, link)
+        coin = db.coin(mint) or {}
+        native = None
+        if coin.get("vault_base") and coin.get("vault_quote"):
+            try:
+                native = (await sources.pool_natives([(coin["vault_base"], coin["vault_quote"])])).get((coin["vault_base"], coin["vault_quote"]))
+            except Exception:  # noqa: BLE001
+                native = None
+        feats = {"liquidity": v.get("liquidity"), "score": an.get("score"), "chase": (an.get("answers") or {}).get("chase"),
+                 "top10": scan.get("top10Pct"), "h1": v.get("p1"), "drop_m5": max(0.0, drop), "age_min": scan.get("ageMin"),
+                 "holders": coin.get("holders"), "mcap": v.get("mcap")}
 
         pct = round(100 * size / stack, 1) if stack else 0
         layers = db.q1("SELECT COUNT(*) c FROM audits WHERE mint=? AND ts>=? AND pass=1", (mint, db.night_start()))["c"]
@@ -78,7 +97,7 @@ class Executor(Agent):
                 f"{aud} · Analyst {an['score']} · stop -{util.gnum(config.get('risk.stop_pct'))}% · "
                 f"trail {util.gnum(config.get('risk.trail_pct'))}%")
         sid = db.insert("signals", dict(mint=mint, ts=time.time(), price=price, size_usd=size, stack_pct=pct, link=link,
-                                        mode=mode, status="sent"))
+                                        mode=mode, status="sent", features=json.dumps(feats), native=native))
         buttons = [{"label": "Buy on FOMO", "url": link}, {"label": "Bought", "callback": f"bought:{sid}"},
                    {"label": "Skip", "callback": f"skip:{sid}"}]
         self.current = {"mint": mint, "name": name, "size": size, "pct": pct, "sid": sid, "ts": time.time(), "mode": mode}
@@ -129,7 +148,7 @@ class Executor(Agent):
         stop_pct = config.get("risk.stop_pct")
         pid = db.insert("positions", dict(mint=s["mint"], opened_at=time.time(), entry_price=s["price"], size_usd=s["size_usd"],
                                           peak_price=s["price"], stop_price=s["price"] * (1 - stop_pct / 100), trail_active=0,
-                                          mode=s["mode"], signal_id=sid))
+                                          mode=s["mode"], signal_id=sid, entry_native=s.get("native")))
         db.x("UPDATE signals SET status='bought' WHERE id=?", (sid,))
         c = db.coin(s["mint"]) or {}
         name = c.get("name") or util.short(s["mint"])

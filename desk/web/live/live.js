@@ -13,7 +13,7 @@
   const t = ts => new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   const cl = v => v == null ? '' : v >= 0 ? 'up' : 'down';
   const COL = { scanner: '#64d2ff', auditor: '#64d2ff', analyst: '#ffd60a', executor: '#00d35a', risk: '#ff6b9a' };
-  const AGENT_OF = { scan: 'scanner', audit_start: 'auditor', audit_layer: 'auditor', audit: 'auditor', verdict: 'analyst', signal: 'executor', fill: 'executor', exit: 'risk' };
+  const AGENT_OF = { lesson: 'risk', scan: 'scanner', audit_start: 'auditor', audit_layer: 'auditor', audit: 'auditor', verdict: 'analyst', signal: 'executor', fill: 'executor', exit: 'risk' };
   const coin = (d) => `<a href="../#/coin/${encodeURIComponent(d.mint)}">${esc(d.name || (d.mint || '').slice(0, 6))}</a>`;
   const L = { snap: null, events: [], filter: 'all', lastEvent: 0, lastOk: 0, live: false, now: {}, prices: {}, chart: null };
 
@@ -44,6 +44,7 @@
       case 'fill': return `<span class="g">Bought</span> ${coin(d)} · ${usd(d.sizeUsd)} @ ${px(d.price)}`;
       case 'exit': return d.status === 'closed' && d.reason == null ? `${coin(d)} closed`
         : `${d.pnlUsd >= 0 ? '<span class="g">Sold</span>' : '<span class="r">Stopped</span>'} ${coin(d)} · ${esc(d.reason)} · <span class="${cl(d.pnlUsd)}">${usd(d.pnlUsd, true)} (${pct(d.pct)})</span>`;
+      case 'lesson': return `<span class="c">${d.status === 'applied' ? 'Learned' : 'Suggests'}</span> · ${esc(d.text)} · <b>${esc(d.key.split('.').pop())} ${esc(d.old)} → ${esc(d.new)}</b>`;
       default: return null;
     }
   }
@@ -128,7 +129,14 @@
     const ch = await api('/api/chart?range=LIVE');
     window.Charts.lineChart($('#chart'), ch, L.chart); L.chart = ch;
   }
-  function renderAll() { kpis(); openTable(); closedTable(); agents(); funnel(); }
+  function lessons() {
+    const lz = L.snap.lessons || [];
+    $('#lz-mode').textContent = 'learner: ' + L.snap.learner;
+    $('#lessons').innerHTML = lz.length ? lz.map(l => `<div class="ev"><time>#${l.id}</time><i style="background:${l.status === 'applied' ? '#00d35a' : '#ff9f0a'}"></i>
+      <div><b>${esc(l.key.split('.').pop().replace(/_/g, ' '))} ${esc(l.old)} → ${esc(l.new)}</b> <span class="muted">${esc(l.status)}</span><br>${esc(l.text)}</div></div>`).join('')
+      : '<div class="empty">No lessons yet: post-mortem on every closed trade</div>';
+  }
+  function renderAll() { kpis(); openTable(); closedTable(); agents(); funnel(); lessons(); }
 
   async function snapshot(first) {
     const s = await api('/api/live');
@@ -159,7 +167,7 @@
     L.events.unshift(e); L.events.length = Math.min(L.events.length, 600);
     if (!skipTape(e)) renderTape(true);
     if (L.snap) agents();
-    if (['scan', 'audit', 'verdict', 'signal', 'fill', 'exit'].includes(kind)) soon();
+    if (['scan', 'audit', 'verdict', 'signal', 'fill', 'exit', 'lesson'].includes(kind)) soon();
   }
   async function stream() {
     while (true) {

@@ -57,6 +57,8 @@ SPEC = {
     "executor.max_pool_pct": (2, 0.01, 100, "float", "Max % of pool", ["pool pct"]),
     "executor.min_ticket_usd": (47.50, 1, 100000, "float", "Min ticket $", ["min ticket"]),
     "executor.below_min": ("bump", None, None, "enum:bump|skip", "Below min", ["below min"]),
+    "executor.max_ticket_pct": (100, 1, 100, "float", "Max ticket % of stack", ["max ticket"]),
+    "executor.max_drop_m5_pct": (100, 1, 100, "float", "Skip if 5m drop over %", ["falling knife", "max drop"]),
     "executor.recheck_liq_drop_pct": (20, 1, 100, "float", "Re-check: liquidity drop %", []),
     "executor.recheck_price_up_pct": (15, 1, 1000, "float", "Re-check: price up %", []),
     "executor.confirm_window_min": (5, 1, 120, "float", "Confirm window min", []),
@@ -81,6 +83,7 @@ SPEC = {
     "desk.push_rejects": (False, None, None, "bool", "Push rejects", ["push rejects"]),
     "desk.fees_ref_discount": (0.10, 0, 1, "float", "Fee ref discount", ["discount"]),
     "desk.fomo_handle": ("", None, None, "str", "FOMO handle", ["handle", "fomo handle"]),
+    "desk.learner": ("auto", None, None, "enum:auto|suggest|off", "Learn from mistakes", ["learner", "learning"]),
     "desk.min_paper_night_h": (6, 0.1, 24, "float", "Full PAPER night h", []),
 }
 

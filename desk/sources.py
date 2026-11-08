@@ -193,6 +193,22 @@ async def top10_pct(mint, pool, supply_raw):
     return round(100 * sum(top) / supply_raw, 2), "gpa"
 
 
+async def pool_natives(vaults: list[tuple[str, str]]) -> dict:
+    """(base_vault, quote_vault) -> quote per base, read straight from the pool's two vaults (no 30s cache)."""
+    addrs = [a for pair in vaults for a in pair]
+    out = {}
+    for i in range(0, len(addrs), 100):
+        chunk = addrs[i:i + 100]
+        j = await rpc("getMultipleAccounts", [chunk, {"encoding": "jsonParsed"}])
+        for a, info in zip(chunk, j["result"]["value"]):
+            out[a] = fields.get("rpc_vault", "ui_amount", info) if info else None
+    res = {}
+    for b, q in vaults:
+        if out.get(b) and out.get(q) is not None:
+            res[(b, q)] = out[q] / out[b]
+    return res
+
+
 # ---------------- base58 + PDA (bonding curve) ----------------
 _B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
