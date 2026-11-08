@@ -227,7 +227,7 @@
   /* ---------- activity rows ---------- */
   const ICON = { bought: 'B', sold: 'S', stopped: '×', rejected: '–' };
   function actRow(r) {
-    const href = r.mint ? (r.kind === 'rejected' ? (r.agent === 'auditor' ? '#/audit/' : '#/coin/') + r.mint : '#/coin/' + r.mint) : '#/activity';
+    const href = r.mint ? (r.kind === 'rejected' ? '#/audit/' : '#/coin/') + r.mint : '#/activity';   // trades -> Coin, rejects -> Auditor
     const v = String(r.value || '');
     const cls = r.kind === 'sold' ? (v.startsWith('-') ? 'down' : 'up') : r.kind === 'stopped' ? 'down' : r.kind === 'rejected' ? 'muted' : '';
     const [v1, v2] = v.split(' · ');
