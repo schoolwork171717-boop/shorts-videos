@@ -34,6 +34,8 @@ input,select{font:inherit;color:var(--text)}
 .banner{position:fixed;left:0;right:0;top:calc(var(--safe-t) + 52px);z-index:20;background:#2c1412;color:var(--red);
   font-size:13px;padding:8px var(--g);text-align:center}
 
+body.offline .balance-wrap,body.offline .coinhd,body.offline .largetitle,body.offline #audit{margin-top:40px}
+
 /* home */
 .balance-wrap{padding:6px var(--g) 0}
 .balance-row{display:flex;align-items:center;gap:10px}

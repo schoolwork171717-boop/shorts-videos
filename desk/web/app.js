@@ -60,6 +60,7 @@
   function banner(err) {
     const b = $('#banner');
     clearInterval(bannerTimer);
+    document.body.classList.toggle('offline', !!err);
     if (!err) { b.hidden = true; return; }
     S.offline = true;
     let n = S.retry;
